@@ -16,6 +16,9 @@
         dwellThresholdMs: 3000,
         priceHoverMinMs: 700,
         exitIntentThresholdPx: 12,
+        touchTapMaxDurationMs: 450,
+        touchMoveTolerancePx: 18,
+        syntheticClickSuppressMs: 750,
         maxTargetBuckets: 28,
         maxHoverTargetBuckets: 20,
         priceAnchorReselectMs: 6000,
@@ -51,6 +54,14 @@
       this.primaryPriceAnchor = null;
       this.lastPriceAnchorTs = 0;
       this.lastDeadClickTs = 0;
+      this.activeTouchStartTs = 0;
+      this.activeTouchTarget = null;
+      this.activeTouchMoved = false;
+      this.activeTouchStartX = 0;
+      this.activeTouchStartY = 0;
+      this.lastTouchTapTs = 0;
+      this.lastTouchTapX = 0;
+      this.lastTouchTapY = 0;
 
       this.raw = this.createInitialState();
     }
@@ -442,9 +453,10 @@
       this.pushEvent("extension_ui_filtered", { event_type: String(type || "unknown") });
     }
 
-    startHoverTracking(targetEl) {
+    startHoverTracking(targetEl, options = {}) {
       const key = this.describeTarget(targetEl, { forHover: true });
       if (!key) return;
+      const countTarget = options.countTarget !== false;
 
       const now = Date.now();
       if (key === this.activeHoverKey) return;
@@ -458,7 +470,7 @@
       // Only record hover targets (and thus hover-based commerce intent) when NOT inside a
       // related/recommended product container — those sections inflate wishlistIntentCount
       // and ctaIntentCount from passive browsing, not from the user's primary product intent.
-      if (!this.isRelatedProductContainer(targetEl)) {
+      if (countTarget && !this.isRelatedProductContainer(targetEl)) {
         this.incrementMapValue(this.raw.hoverTargets, key, 1, this.config.maxHoverTargetBuckets);
       }
 
@@ -684,6 +696,118 @@
       }
     }
 
+    extractTouchPoint(event) {
+      const point = event.changedTouches?.[0] || event.touches?.[0] || null;
+      if (!point) return null;
+      return {
+        x: Number(point.clientX || 0),
+        y: Number(point.clientY || 0)
+      };
+    }
+
+    clearActiveTouch() {
+      this.activeTouchStartTs = 0;
+      this.activeTouchTarget = null;
+      this.activeTouchMoved = false;
+      this.activeTouchStartX = 0;
+      this.activeTouchStartY = 0;
+    }
+
+    shouldSuppressSyntheticClick(event) {
+      if (!this.lastTouchTapTs) return false;
+      const now = Date.now();
+      if ((now - this.lastTouchTapTs) > this.config.syntheticClickSuppressMs) return false;
+
+      const x = Number(event.clientX || 0);
+      const y = Number(event.clientY || 0);
+      return Math.hypot(x - this.lastTouchTapX, y - this.lastTouchTapY) <= Math.max(24, this.config.touchMoveTolerancePx * 2);
+    }
+
+    registerActivation(target, options = {}) {
+      const now = Date.now();
+      const source = String(options.source || "click");
+      const x = Number(options.x || 0);
+      const y = Number(options.y || 0);
+
+      this.raw.clicks += 1;
+
+      this.clickLog.push({ x, y, ts: now });
+      while (this.clickLog.length && (now - this.clickLog[0].ts) > this.config.rageWindowMs) {
+        this.clickLog.shift();
+      }
+
+      if (this.clickLog.length >= this.config.rageMinClicks) {
+        const recent = this.clickLog.slice(-this.config.rageMinClicks);
+        let maxDist = 0;
+        for (let i = 0; i < recent.length; i += 1) {
+          for (let j = i + 1; j < recent.length; j += 1) {
+            maxDist = Math.max(maxDist, Math.hypot(recent[i].x - recent[j].x, recent[i].y - recent[j].y));
+          }
+        }
+        if (
+          maxDist <= this.config.rageMaxDistancePx &&
+          (now - this.lastRageTs) >= this.config.rageCooldownMs &&
+          this.raw.rageClicks < this.config.rageMaxPerSession
+        ) {
+          this.raw.rageClicks += 1;
+          this.lastRageTs = now;
+          this.pushEvent("rage_click", { maxDist: Number(maxDist.toFixed(1)), source });
+        }
+      }
+
+      if (target) {
+        const primaryTarget = this.detectPrimaryElement(target, { forHover: false }) || target;
+        const text = this.extractTargetText(primaryTarget);
+        const actions = this.detectCommerceAction(primaryTarget, text);
+        const targetKey = this.describeTarget(primaryTarget, { forHover: false });
+        if (targetKey) {
+          this.incrementMapValue(this.raw.clickTargets, targetKey, 1);
+        }
+
+        if (!this.isInteractiveTarget(primaryTarget) && !this.isPriceElement(primaryTarget)) {
+          // Only count as dead click if a previous dead click happened within 2s — single
+          // reflexive taps on text/images are normal browsing, not confusion signals.
+          if ((now - this.lastDeadClickTs) <= 2000) {
+            this.raw.deadClicks += 1;
+            this.pushEvent("dead_click", { target: targetKey || "unknown", source });
+          }
+          this.lastDeadClickTs = now;
+        }
+
+        if (actions.wishlist) {
+          this.raw.outcomes.added_to_wishlist = true;
+          this.pushEvent("wishlist_toggle", { target: targetKey || "unknown", source });
+        }
+        if (actions.addToCart) {
+          this.raw.cartAddRemove += 1;
+          this.raw.outcomes.added_to_cart = true;
+          this.pushEvent("add_to_cart", { target: targetKey || "unknown", source });
+        }
+        if (actions.removeFromCart) {
+          this.raw.cartAddRemove += 1;
+          this.raw.cartAbandons += 1;
+          this.pushEvent("remove_from_cart", { target: targetKey || "unknown", source });
+        }
+        if (actions.checkout) {
+          this.raw.directCheckout = true;
+          this.raw.outcomes.checkout_started = true;
+          this.pushEvent("checkout_started", { target: targetKey || "unknown", source });
+        }
+        if (actions.purchaseComplete) {
+          this.raw.outcomes.purchase_completed = true;
+        }
+        if (this.isPrimaryPriceElement(primaryTarget)) {
+          this.raw.priceHover += 1;
+          this.pushEvent("price_interaction_click", { target: targetKey || "unknown", source });
+        }
+
+        const section = this.detectSectionFromElement(primaryTarget);
+        if (section) this.switchSection(section, source);
+      }
+
+      this.pushEvent("click", { section: this.activeSection || "none", source });
+    }
+
     getRawSnapshot() {
       const now = Date.now();
       this.sampleActiveHover(now);
@@ -725,93 +849,79 @@
       }, { signal, passive: true });
 
       document.addEventListener("click", (event) => {
-        const now = Date.now();
+        if (this.shouldSuppressSyntheticClick(event)) {
+          this.markInactivitySave(onInactivity);
+          return;
+        }
         const target = event.target instanceof Element ? event.target : null;
         if (target && this.isEmotionUiNode(target)) {
           this.registerFilteredEmotionUiEvent("click");
           this.markInactivitySave(onInactivity);
           return;
         }
-        this.raw.clicks += 1;
-
-        const x = Number(event.clientX || 0);
-        const y = Number(event.clientY || 0);
-        this.clickLog.push({ x, y, ts: now });
-        while (this.clickLog.length && (now - this.clickLog[0].ts) > this.config.rageWindowMs) {
-          this.clickLog.shift();
-        }
-
-        if (this.clickLog.length >= this.config.rageMinClicks) {
-          const recent = this.clickLog.slice(-this.config.rageMinClicks);
-          let maxDist = 0;
-          for (let i = 0; i < recent.length; i += 1) {
-            for (let j = i + 1; j < recent.length; j += 1) {
-              maxDist = Math.max(maxDist, Math.hypot(recent[i].x - recent[j].x, recent[i].y - recent[j].y));
-            }
-          }
-          if (
-            maxDist <= this.config.rageMaxDistancePx &&
-            (now - this.lastRageTs) >= this.config.rageCooldownMs &&
-            this.raw.rageClicks < this.config.rageMaxPerSession
-          ) {
-            this.raw.rageClicks += 1;
-            this.lastRageTs = now;
-            this.pushEvent("rage_click", { maxDist: Number(maxDist.toFixed(1)) });
-          }
-        }
-
-        if (target) {
-          const primaryTarget = this.detectPrimaryElement(target, { forHover: false }) || target;
-          const text = this.extractTargetText(primaryTarget);
-          const actions = this.detectCommerceAction(primaryTarget, text);
-          const targetKey = this.describeTarget(primaryTarget, { forHover: false });
-          if (targetKey) {
-            this.incrementMapValue(this.raw.clickTargets, targetKey, 1);
-          }
-
-          if (!this.isInteractiveTarget(primaryTarget) && !this.isPriceElement(primaryTarget)) {
-            // Only count as dead click if a previous dead click happened within 2s — single
-            // reflexive taps on text/images are normal browsing, not confusion signals.
-            if ((now - this.lastDeadClickTs) <= 2000) {
-              this.raw.deadClicks += 1;
-              this.pushEvent("dead_click", { target: targetKey || "unknown" });
-            }
-            this.lastDeadClickTs = now;
-          }
-
-          if (actions.wishlist) {
-            this.raw.outcomes.added_to_wishlist = true;
-            this.pushEvent("wishlist_toggle", { target: targetKey || "unknown" });
-          }
-          if (actions.addToCart) {
-            this.raw.cartAddRemove += 1;
-            this.raw.outcomes.added_to_cart = true;
-            this.pushEvent("add_to_cart", { target: targetKey || "unknown" });
-          }
-          if (actions.removeFromCart) {
-            this.raw.cartAddRemove += 1;
-            this.raw.cartAbandons += 1;
-            this.pushEvent("remove_from_cart", { target: targetKey || "unknown" });
-          }
-          if (actions.checkout) {
-            this.raw.directCheckout = true;
-            this.raw.outcomes.checkout_started = true;
-            this.pushEvent("checkout_started", { target: targetKey || "unknown" });
-          }
-          if (actions.purchaseComplete) {
-            this.raw.outcomes.purchase_completed = true;
-          }
-          if (this.isPrimaryPriceElement(primaryTarget)) {
-            this.raw.priceHover += 1;
-            this.pushEvent("price_interaction_click", { target: targetKey || "unknown" });
-          }
-
-          const section = this.detectSectionFromElement(primaryTarget);
-          if (section) this.switchSection(section, "click");
-        }
-
-        this.pushEvent("click", { section: this.activeSection || "none" });
+        this.registerActivation(target, {
+          x: Number(event.clientX || 0),
+          y: Number(event.clientY || 0),
+          source: "click"
+        });
         this.markInactivitySave(onInactivity);
+      }, { signal, passive: true });
+
+      document.addEventListener("touchstart", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target) return;
+        if (this.isEmotionUiNode(target)) {
+          this.registerFilteredEmotionUiEvent("touch");
+          return;
+        }
+
+        const point = this.extractTouchPoint(event);
+        this.activeTouchStartTs = Date.now();
+        this.activeTouchTarget = target;
+        this.activeTouchMoved = false;
+        this.activeTouchStartX = point?.x || 0;
+        this.activeTouchStartY = point?.y || 0;
+
+        this.startHoverTracking(target, { countTarget: false });
+        const section = this.detectSectionFromElement(target);
+        if (section) this.switchSection(section, "touch");
+        this.markInactivitySave(onInactivity);
+      }, { signal, passive: true });
+
+      document.addEventListener("touchmove", (event) => {
+        const point = this.extractTouchPoint(event);
+        if (!point || !this.activeTouchStartTs) return;
+        if (Math.hypot(point.x - this.activeTouchStartX, point.y - this.activeTouchStartY) > this.config.touchMoveTolerancePx) {
+          this.activeTouchMoved = true;
+        }
+        this.markInactivitySave(onInactivity);
+      }, { signal, passive: true });
+
+      document.addEventListener("touchend", (event) => {
+        const target = this.activeTouchTarget || (event.target instanceof Element ? event.target : null);
+        const point = this.extractTouchPoint(event);
+        const now = Date.now();
+        const durationMs = this.activeTouchStartTs ? Math.max(0, now - this.activeTouchStartTs) : 0;
+        this.finalizeHoverTracking(now);
+
+        if (target && !this.activeTouchMoved && durationMs <= this.config.touchTapMaxDurationMs) {
+          this.lastTouchTapTs = now;
+          this.lastTouchTapX = point?.x || this.activeTouchStartX;
+          this.lastTouchTapY = point?.y || this.activeTouchStartY;
+          this.registerActivation(target, {
+            x: this.lastTouchTapX,
+            y: this.lastTouchTapY,
+            source: "touch"
+          });
+        }
+
+        this.clearActiveTouch();
+        this.markInactivitySave(onInactivity);
+      }, { signal, passive: true });
+
+      document.addEventListener("touchcancel", () => {
+        this.finalizeHoverTracking(Date.now());
+        this.clearActiveTouch();
       }, { signal, passive: true });
 
       document.addEventListener("mouseover", (event) => {
@@ -897,6 +1007,7 @@
       this.inactivityTimer = null;
       this.finalizeHoverTracking(Date.now());
       this.sampleActiveSectionDwell(Date.now());
+      this.clearActiveTouch();
     }
   }
 
