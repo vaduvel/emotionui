@@ -21,6 +21,17 @@ const CONFIG = {
     learningRate: 0.04,
     l2: 0.0003
   },
+  experiment: {
+    enabled: true,
+    key: "policy_runtime_v1",
+    configVersion: "2026-03-10",
+    salt: "emotionui_policy_runtime_v1",
+    variants: [
+      { key: "adaptive", weight: 1, runtime: "adaptive" },
+      { key: "control", weight: 0, runtime: "control" },
+      { key: "challenger_shadow", weight: 0, runtime: "adaptive_shadow" }
+    ]
+  },
   rewards: {
     wishlist: 0.1,
     addToCart: 0.12,
@@ -190,6 +201,106 @@ class RewardCalculator {
 
     return Math.max(-1, Math.min(1, Number(reward.toFixed(4))));
   }
+}
+
+function hashStringToUnitInterval(value = "") {
+  const input = String(value || "");
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ((hash >>> 0) % 10000) / 10000;
+}
+
+function normalizeExperimentVariants(variants = []) {
+  if (!Array.isArray(variants)) return [];
+  return variants
+    .map((variant) => ({
+      key: String(variant?.key || "").trim(),
+      weight: Math.max(0, Number(variant?.weight || 0)),
+      runtime: String(variant?.runtime || "adaptive").trim() || "adaptive"
+    }))
+    .filter((variant) => variant.key && variant.weight > 0);
+}
+
+function assignExperimentVariant(context = {}, config = CONFIG.experiment) {
+  const enabled = config?.enabled !== false;
+  const experimentKey = String(config?.key || "policy_runtime_v1");
+  const configVersion = String(config?.configVersion || "v1");
+  const normalizedVariants = normalizeExperimentVariants(config?.variants || []);
+  const defaultVariant = normalizedVariants[0] || { key: "adaptive", weight: 1, runtime: "adaptive" };
+  const subjectKey = String(
+    context?.sessionId ||
+    `${context?.site || "site"}:${context?.productId || "product"}`
+  );
+  const bucket = hashStringToUnitInterval(`${config?.salt || experimentKey}:${configVersion}:${subjectKey}`);
+
+  if (!enabled || !normalizedVariants.length) {
+    return {
+      enabled,
+      experiment_key: experimentKey,
+      experiment_variant: defaultVariant.key,
+      experiment_runtime_mode: defaultVariant.runtime,
+      experiment_config_version: configVersion,
+      experiment_assignment_bucket: bucket
+    };
+  }
+
+  const totalWeight = normalizedVariants.reduce((sum, variant) => sum + variant.weight, 0) || 1;
+  let cursor = 0;
+  let winner = normalizedVariants[normalizedVariants.length - 1];
+  for (const variant of normalizedVariants) {
+    cursor += variant.weight / totalWeight;
+    if (bucket <= cursor) {
+      winner = variant;
+      break;
+    }
+  }
+
+  return {
+    enabled,
+    experiment_key: experimentKey,
+    experiment_variant: winner.key,
+    experiment_runtime_mode: winner.runtime,
+    experiment_config_version: configVersion,
+    experiment_assignment_bucket: bucket
+  };
+}
+
+function applyExperimentDecision(baseDecision, experiment = {}) {
+  const decision = {
+    ...baseDecision,
+    experiment_key: experiment.experiment_key || null,
+    experiment_variant: experiment.experiment_variant || "adaptive",
+    experiment_runtime_mode: experiment.experiment_runtime_mode || "adaptive",
+    experiment_config_version: experiment.experiment_config_version || "v1",
+    experiment_assignment_bucket: Number(experiment.experiment_assignment_bucket || 0)
+  };
+
+  if (String(experiment.experiment_runtime_mode || "").toLowerCase() !== "control") {
+    return decision;
+  }
+
+  return {
+    ...decision,
+    source: `${baseDecision.source || "policy_model"}+experiment_control`,
+    policy: "SILENT",
+    confidence: 1,
+    reason: "experiment_control_forced_silent",
+    exploration: false,
+    abstained: true,
+    shadow_policy: String(baseDecision.policy || "SILENT").toUpperCase(),
+    shadow_confidence: Number(baseDecision.confidence || 0),
+    shadow_reason: baseDecision.reason || "unknown",
+    shadow_source: baseDecision.source || "policy_model",
+    shadow_policy_probs: baseDecision.policy_probs || {},
+    policy_probs: {
+      SILENT: 1,
+      OBSERVE: 0,
+      INTERVENE: 0
+    }
+  };
 }
 
 class PolicyModel {
@@ -720,7 +831,9 @@ runtimeApi.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "EMOTIONUI_POLICY_DECIDE") {
     getPolicyModel().then((model) => {
-      const decision = PolicyModel.decide(model, message.features || {}, CONFIG.policy, message.context || {});
+      const baseDecision = PolicyModel.decide(model, message.features || {}, CONFIG.policy, message.context || {});
+      const experiment = assignExperimentVariant(message.context || {}, CONFIG.experiment);
+      const decision = applyExperimentDecision(baseDecision, experiment);
       sendResponse({
         ...decision,
         model_version: model.version || 2,
@@ -733,6 +846,22 @@ runtimeApi.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "EMOTIONUI_POLICY_LEARN") {
     getPolicyModel().then(async (model) => {
       const reward = rewardCalculator.compute(message.context || {});
+      const experimentRuntimeMode = String(
+        message?.context?.decisionMeta?.experimentRuntimeMode ||
+        message?.decision?.experiment_runtime_mode ||
+        "adaptive"
+      ).toLowerCase();
+      if (experimentRuntimeMode === "control") {
+        sendResponse({
+          ok: true,
+          reward,
+          trained_samples: model.trained_samples || 0,
+          running_reward: model.running_reward || 0,
+          skipped_training: true,
+          skipped_reason: "experiment_control_holdout"
+        });
+        return;
+      }
       const chosenPolicy = message?.decision?.policy || "SILENT";
       const updated = PolicyModel.learn(model, message.features || {}, chosenPolicy, reward, CONFIG.policy);
       await setPolicyModel(updated);

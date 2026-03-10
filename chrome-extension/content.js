@@ -745,6 +745,9 @@
           state_contract_mode: "STANDARD",
           state_contract_intervention_type: "none",
           state_contract_reason_families: [],
+          experiment_variant: lastDecision.experiment_variant || "adaptive",
+          experiment_runtime_mode: lastDecision.experiment_runtime_mode || "adaptive",
+          experiment_key: lastDecision.experiment_key || null,
           baseline_active: false,
           suppressed_modes: [],
           derived_scores: { f: 0, h: 0, r: 0, p: 0 },
@@ -806,6 +809,9 @@
         state_contract_mode: decision.state_contract_mode || decision.mapped_mode || resolved.mode,
         state_contract_intervention_type: decision.state_contract_intervention_type || decision.mapped_intervention_type || resolved.intervention_type || "none",
         state_contract_reason_families: Array.isArray(decision.state_contract_reason_families) ? decision.state_contract_reason_families : [],
+        experiment_variant: decision.experiment_variant || "adaptive",
+        experiment_runtime_mode: decision.experiment_runtime_mode || "adaptive",
+        experiment_key: decision.experiment_key || null,
         previous_mode: decision.previous_mode || null,
         override_reason: decision.override_reason || "none",
         dismiss_cooldown_active: Boolean(decision.dismiss_cooldown_active),
@@ -873,6 +879,7 @@
         type: "EMOTIONUI_POLICY_DECIDE",
         features: featurePack.normalized,
         context: {
+          sessionId: rawSnapshot.sessionId,
           sessionDurationSec: featurePack.context.sessionDurationSec,
           site: rawSnapshot.site,
           productId: rawSnapshot.productId,
@@ -1036,7 +1043,11 @@
             resolvedMode: lastDecision.resolved_mode,
             interventionType: lastDecision.intervention_type,
             stateLabel: lastDecision.state_label,
-            wasOverride: Boolean(lastDecision.was_override)
+            wasOverride: Boolean(lastDecision.was_override),
+            experimentKey: lastDecision.experiment_key || null,
+            experimentVariant: lastDecision.experiment_variant || "adaptive",
+            experimentRuntimeMode: lastDecision.experiment_runtime_mode || "adaptive",
+            experimentConfigVersion: lastDecision.experiment_config_version || null
           }
         }
       );

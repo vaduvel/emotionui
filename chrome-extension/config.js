@@ -92,6 +92,17 @@
       learningRate: 0.04,
       l2: 0.0003
     },
+    experiment: {
+      enabled: true,
+      key: "policy_runtime_v1",
+      configVersion: "2026-03-10",
+      salt: "emotionui_policy_runtime_v1",
+      variants: [
+        { key: "adaptive", weight: 1, runtime: "adaptive" },
+        { key: "control", weight: 0, runtime: "control" },
+        { key: "challenger_shadow", weight: 0, runtime: "adaptive_shadow" }
+      ]
+    },
     compliance: {
       euSafeMode: true,
       biometricInputsEnabled: false,
