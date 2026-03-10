@@ -549,7 +549,110 @@ Required change:
 Acceptance:
 - can correlate session behavior changes to config revisions
 
-## 11. Execution order
+## 11. Workstream H — Product validation and business impact
+
+### H1. Define the official evaluation scorecard around adaptation quality
+
+Status:
+- not formalized yet
+
+Files:
+- `README.md`
+- `PROJECT_ARCHITECTURE_SPEC.md`
+- `adaptive_ui_outcome_contract.md`
+- `final_state_mode_intervention_matrix.md`
+
+Required change:
+- define the primary evaluation lens explicitly:
+  - transition detection rate
+  - time-to-detect for important moment changes
+  - intervention fit rate
+  - false intervention rate
+  - commerce progression after detection
+- keep final-state accuracy as a secondary diagnostic metric only
+
+Acceptance:
+- project docs clearly state that the main KPI is adaptive timing/fit, not only final label match
+- session reviews use the scorecard consistently
+
+### H2. Add impact-oriented reporting on top of session logs
+
+Status:
+- partially possible from current payloads
+- not operationalized as a product-facing report yet
+
+Files:
+- `demo/admin.html`
+- `chrome-extension/pipeline/outcomeLogger.js`
+- `supabase/schema.sql`
+- `supabase/migrate_v2.sql`
+
+Required change:
+- build aggregate reporting for:
+  - exposure -> add to cart
+  - exposure -> checkout
+  - exposure -> purchase
+  - dismissed intervention rate
+  - tolerated intervention rate
+  - outcome by mode / intervention type / reason family
+- make it easy to answer:
+  - which adaptations help
+  - which adaptations are ignored
+  - which adaptations correlate with friction or abandonment
+
+Acceptance:
+- one repeatable report/dashboard exists for intervention impact, not only raw session inspection
+
+### H3. Define a minimal live experiment protocol
+
+Status:
+- not implemented
+
+Files:
+- `README.md`
+- `PROJECT_ARCHITECTURE_SPEC.md`
+- `chrome-extension/config.js`
+- `chrome-extension/background.js`
+- `chrome-extension/pipeline/outcomeLogger.js`
+
+Required change:
+- support a simple live experiment setup:
+  - control
+  - adaptive runtime
+  - optional shadow/challenger policy
+- log cohort assignment in every session payload
+- document the minimum run conditions and success criteria
+
+Acceptance:
+- can compare adaptive vs non-adaptive behavior without changing the runtime manually between sessions
+- experiment readout can be reproduced
+
+### H4. Narrow commercial validation to the top 3 moments that matter
+
+Status:
+- implicit in current demos and sessions
+- not formalized as the MVP validation scope
+
+Files:
+- `README.md`
+- `adaptive_ui_outcome_contract.md`
+- `final_state_mode_intervention_matrix.md`
+
+Required change:
+- define the initial commercial validation set:
+  - research-heavy high-consideration browsing
+  - price hesitation / reassurance seeking
+  - decision-ready / checkout acceleration
+- for each moment, define:
+  - expected signals
+  - allowed interventions
+  - success metrics
+  - failure modes
+
+Acceptance:
+- MVP claims are grounded in 2-3 validated adaptive moments, not the full state taxonomy
+
+## 12. Execution order
 
 ### P1 — Do first
 - A1. Recency decay curves
@@ -577,8 +680,12 @@ Acceptance:
 - D4. Global prior vs per-domain strategy
 - F1. SDK parity checklist
 - E4. Annotation workflow
+- H1. Official evaluation scorecard
+- H2. Impact-oriented reporting
+- H3. Live experiment protocol
+- H4. Top-3 moment validation scope
 
-## 12. Recommended next sprint
+## 13. Recommended next sprint
 
 If only one short sprint is available, implement exactly these 5 items:
 
@@ -592,7 +699,7 @@ Why:
 - they improve accuracy, latency visibility, and dataset quality without rewriting architecture
 - they create better diagnostics for every later decision
 
-## 13. Definition of done for this phase
+## 14. Definition of done for this phase
 
 This phase is done when all conditions below are true:
 
@@ -603,7 +710,7 @@ This phase is done when all conditions below are true:
 - policy model receives denser learning signal
 - session replay/debugging quality is improved through better logging quality
 
-## 14. What must remain unchanged in this phase
+## 15. What must remain unchanged in this phase
 
 - keep rule-first state inference
 - keep the 8-state canonical contract
