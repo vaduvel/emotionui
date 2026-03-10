@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layer 1 — Sensory Layer | EmotionUI Framework</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#07090D;--s1:#0D1117;--s2:#161B22;--s3:#1C2128;--border:#21262D;--border2:#30363D;--text:#E6EDF3;--muted:#7D8590;--dim:#484F58;--accent:#7C3AED;--accent-glow:rgba(124,58,237,0.15);--teal:#00D4AA;--teal-glow:rgba(0,212,170,0.12);--red:#F85149;--orange:#E3B341;--blue:#58A6FF;--green:#3FB950;--pink:#F778BA}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+header{padding:14px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(7,9,13,0.95);backdrop-filter:blur(20px);z-index:200}
+.logo{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.04em}
+.logo em{color:var(--text);font-style:normal;font-weight:700}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px var(--teal);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.header-right{display:flex;align-items:center;gap:12px}
+.badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:4px 10px;border-radius:4px;letter-spacing:.06em;text-transform:uppercase}
+.badge-layer{background:var(--accent-glow);color:var(--accent);border:1px solid rgba(124,58,237,.3)}
+.badge-live{background:var(--teal-glow);color:var(--teal);border:1px solid rgba(0,212,170,.3)}
+.layout{display:grid;grid-template-columns:1fr 340px;min-height:calc(100vh - 53px)}
+.left{padding:24px;display:flex;flex-direction:column;gap:18px;border-right:1px solid var(--border);overflow-y:auto}
+.dim-tabs{display:flex;gap:4px;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:4px}
+.dim-tab{flex:1;padding:9px 12px;border-radius:7px;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;text-align:center}
+.dim-tab.active{background:var(--s3);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.dim-tab:hover:not(.active){color:var(--text)}
+.dim-panel{display:none;flex-direction:column;gap:16px}
+.dim-panel.active{display:flex}
+.sec-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--dim);display:flex;align-items:center;gap:8px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.canvas-wrap{position:relative;background:var(--s1);border:1px solid var(--border);border-radius:12px;height:220px;overflow:hidden;cursor:none}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.canvas-overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:12px 16px;z-index:2}
+.canvas-top,.canvas-bottom{display:flex;justify-content:space-between;align-items:flex-start}
+.canvas-bottom{align-items:flex-end}
+.canvas-tag{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);background:rgba(13,17,23,.8);padding:3px 8px;border-radius:4px;letter-spacing:.06em}
+#realtimeState{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:4px 10px;border-radius:5px;background:rgba(13,17,23,.9);transition:color .3s,border-color .3s;border:1px solid var(--border)}
+.signal-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.sig-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px;transition:border-color .3s;cursor:default}
+.sig-card.clickable{cursor:pointer}
+.sig-card.clickable:hover{border-color:var(--teal);background:var(--s2)}
+.sig-card.firing{border-color:var(--orange)}
+.sig-icon{font-size:18px;margin-bottom:6px}
+.sig-name{font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px}
+.sig-desc{font-size:10px;color:var(--muted);line-height:1.4}
+.sig-count{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--accent);margin-top:6px}
+.sig-bar{height:2px;background:var(--border);border-radius:1px;margin-top:6px;overflow:hidden}
+.sig-bar-fill{height:100%;border-radius:1px;width:0%;transition:width .3s}
+.session-timeline{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.timeline-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.timeline-title{font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}
+.timeline-duration{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
+#sessionTimeline{padding:12px 16px;display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.timeline-event{display:flex;align-items:flex-start;gap:10px;font-size:11px;animation:slideIn .25s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.te-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);min-width:42px;padding-top:1px}
+.te-dot{width:6px;height:6px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.te-text{color:var(--muted);line-height:1.4}
+.te-page{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);background:var(--s2);padding:2px 6px;border-radius:3px;flex-shrink:0}
+.pattern-list{display:flex;flex-direction:column;gap:8px}
+.pattern-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;transition:border-color .3s}
+.pattern-card.active-pattern{border-color:var(--teal)}
+.p-icon{font-size:20px}
+.p-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
+.p-trigger{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.p-confidence{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;min-width:36px;text-align:right}
+.visit-history{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.vh-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.vh-title{font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}
+.vh-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--teal)}
+.vh-table{width:100%;border-collapse:collapse}
+.vh-table th{padding:8px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);text-align:left;border-bottom:1px solid var(--border);background:var(--s2)}
+.vh-table td{padding:8px 16px;font-size:11px;color:var(--muted);border-bottom:1px solid rgba(33,38,45,.5)}
+.vh-table td.highlight{color:var(--text);font-weight:500}
+.vh-table td.intent{font-weight:600;font-size:10px}
+.intent-waiting{color:var(--orange)}.intent-researching{color:var(--blue)}.intent-decided{color:var(--green)}.intent-comparing{color:var(--pink)}.intent-unknown{color:var(--dim)}
+.right{background:var(--s1);padding:20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.intent-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden}
+.intent-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--teal));opacity:0;transition:opacity .5s}
+.intent-card.has-intent::before{opacity:1}
+.ic-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);margin-bottom:10px}
+.ic-state{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;transition:color .4s;min-height:32px}
+.ic-sub{font-size:11px;color:var(--muted);line-height:1.5;min-height:36px;transition:all .3s}
+.ic-confidence-row{display:flex;align-items:center;gap:8px;margin-top:12px}
+.ic-conf-label{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.ic-conf-bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.ic-conf-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--teal));width:0%;transition:width .6s ease}
+.ic-conf-val{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--teal);min-width:28px;text-align:right}
+.meters{display:flex;flex-direction:column;gap:8px}
+.meter-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.mc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.mc-name{font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px}
+.mc-dot{width:5px;height:5px;border-radius:50%}
+.mc-val{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;transition:color .3s}
+.mc-track{height:5px;background:var(--s2);border-radius:3px;overflow:hidden}
+.mc-fill{height:100%;border-radius:3px;width:0%;transition:width .35s ease}
+.payload-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.payload-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ph-title{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.ph-live{width:5px;height:5px;border-radius:50%;background:var(--teal);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+#payloadCode{padding:14px;font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.7;white-space:pre;overflow-x:auto;color:var(--muted);max-height:240px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.json-key{color:var(--blue)}.json-str{color:var(--green)}.json-num{color:var(--orange)}.json-bool{color:var(--accent)}.json-null{color:var(--red)}
+.action-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px}
+.ac-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);margin-bottom:10px}
+.ac-action{font-size:12px;color:var(--muted);line-height:1.6;min-height:40px;transition:all .3s}
+.ac-action strong{color:var(--teal)}
+.elog{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.elog-head{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.elog-title{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.elog-clear{background:none;border:none;color:var(--dim);font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:color .2s}
+.elog-clear:hover{color:var(--red)}
+#eventLog{max-height:130px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.el-entry{padding:5px 16px;font-family:'JetBrains Mono',monospace;font-size:10px;display:flex;gap:10px;align-items:center;animation:fadeIn .2s ease;border-bottom:1px solid rgba(33,38,45,.4)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.el-t{color:var(--dim);min-width:48px}.el-sig{font-weight:600;min-width:90px}.el-v{color:var(--muted);font-size:9px}
+.col-red{color:var(--red)}.col-orange{color:var(--orange)}.col-blue{color:var(--blue)}.col-green{color:var(--green)}.col-accent{color:var(--accent)}.col-teal{color:var(--teal)}.col-pink{color:var(--pink)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="pulse-dot"></div><span><em>EmotionUI</em> Framework</span></div>
+  <div class="header-right">
+    <span class="badge badge-layer">Layer 1 / 5 — Sensory</span>
+    <span class="badge badge-live">● Live</span>
+  </div>
+</header>
+<div class="layout">
+  <div class="left">
+    <div class="dim-tabs">
+      <button class="dim-tab active" onclick="switchDim(0)">Dim 1 · Real-time</button>
+      <button class="dim-tab" onclick="switchDim(1)">Dim 2 · Session</button>
+      <button class="dim-tab" onclick="switchDim(2)">Dim 3 · Cross-Session</button>
+    </div>
+
+    <!-- DIM 1 -->
+    <div class="dim-panel active" id="dim0">
+      <div class="sec-label">Mouse Telemetry Canvas</div>
+      <div class="canvas-wrap" id="mouseArea">
+        <canvas id="mouseCanvas"></canvas>
+        <div class="canvas-overlay">
+          <div class="canvas-top">
+            <span class="canvas-tag">MOUSE TELEMETRY · MOVE HERE</span>
+            <span id="realtimeState" style="color:var(--muted)">NEUTRAL</span>
+          </div>
+          <div class="canvas-bottom">
+            <span class="canvas-tag" id="coordTag">x:— y:—</span>
+            <span class="canvas-tag" id="velocityTag">vel: 0 px/ms</span>
+          </div>
+        </div>
+      </div>
+      <div class="sec-label">Live Signal Detectors</div>
+      <div class="signal-grid">
+        <div class="sig-card" id="sig-rage"><div class="sig-icon">💢</div><div class="sig-name">Rage Click</div><div class="sig-desc">3+ clicks rapid</div><div class="sig-count" id="rageCount">0</div><div class="sig-bar"><div class="sig-bar-fill" id="rageBar" style="background:var(--red)"></div></div></div>
+        <div class="sig-card" id="sig-jitter"><div class="sig-icon">🌊</div><div class="sig-name">Mouse Jitter</div><div class="sig-desc">Mișcări haotice</div><div class="sig-count" id="jitterCount">0</div><div class="sig-bar"><div class="sig-bar-fill" id="jitterBar" style="background:var(--orange)"></div></div></div>
+        <div class="sig-card" id="sig-exit"><div class="sig-icon">🚪</div><div class="sig-name">Exit Intent</div><div class="sig-desc">Cursor → top</div><div class="sig-count" id="exitCount">0</div><div class="sig-bar"><div class="sig-bar-fill" id="exitBar" style="background:var(--accent)"></div></div></div>
+        <div class="sig-card" id="sig-dwell"><div class="sig-icon">⏸</div><div class="sig-name">Dwell Time</div><div class="sig-desc">Pauze lungi</div><div class="sig-count" id="dwellCount">0</div><div class="sig-bar"><div class="sig-bar-fill" id="dwellBar" style="background:var(--blue)"></div></div></div>
+        <div class="sig-card" id="sig-scroll"><div class="sig-icon">📜</div><div class="sig-name">Scroll Thrash</div><div class="sig-desc">Rapid sus-jos</div><div class="sig-count" id="scrollCount">0</div><div class="sig-bar"><div class="sig-bar-fill" id="scrollBar" style="background:var(--green)"></div></div></div>
+        <div class="sig-card" id="sig-hover"><div class="sig-icon">🎯</div><div class="sig-name">Long Hover</div><div class="sig-desc">Ezitare pe elem.</div><div class="sig-count" id="hoverCount">0</div><div class="sig-bar"><div class="sig-bar-fill" id="hoverBar" style="background:var(--pink)"></div></div></div>
+      </div>
+      <div class="elog">
+        <div class="elog-head"><span class="elog-title"><span class="ph-live"></span>EVENT STREAM</span><button class="elog-clear" onclick="clearLog()">clear</button></div>
+        <div id="eventLog"></div>
+      </div>
+    </div>
+
+    <!-- DIM 2 -->
+    <div class="dim-panel" id="dim1">
+      <div class="sec-label">Session Timeline</div>
+      <div class="session-timeline">
+        <div class="timeline-header"><span class="timeline-title">📍 Activitate sesiune curentă</span><span class="timeline-duration" id="sessionDuration">0m 0s</span></div>
+        <div id="sessionTimeline">
+          <div class="timeline-event"><span class="te-time">0:00</span><span class="te-dot" style="background:var(--blue)"></span><span class="te-text">Sesiune pornită</span><span class="te-page">/home</span></div>
+        </div>
+      </div>
+      <div class="sec-label">Intent Patterns Detected</div>
+      <div class="pattern-list" id="patternList">
+        <div class="pattern-card" id="pat-browsing"><div class="p-icon">🔍</div><div><div class="p-name">Explorare / Browsing</div><div class="p-trigger">visits &gt; 2, no direct nav, low speed</div></div><div class="p-confidence col-blue" id="pat-browsing-conf">0%</div></div>
+        <div class="pattern-card" id="pat-research"><div class="p-icon">📊</div><div><div class="p-name">Cercetare activă</div><div class="p-trigger">long dwell on specs, multiple views</div></div><div class="p-confidence col-pink" id="pat-research-conf">0%</div></div>
+        <div class="pattern-card" id="pat-compare"><div class="p-icon">⚖️</div><div><div class="p-name">Comparare produse</div><div class="p-trigger">alt tabs, similar products</div></div><div class="p-confidence col-orange" id="pat-compare-conf">0%</div></div>
+        <div class="pattern-card" id="pat-decided"><div class="p-icon">⚡</div><div><div class="p-name">Hotărât / Express</div><div class="p-trigger">direct nav, fast scroll, action</div></div><div class="p-confidence col-green" id="pat-decided-conf">0%</div></div>
+        <div class="pattern-card" id="pat-hesitant"><div class="p-icon">💭</div><div><div class="p-name">Ezitare la preț</div><div class="p-trigger">cart add/remove, exit intent</div></div><div class="p-confidence col-red" id="pat-hesitant-conf">0%</div></div>
+      </div>
+      <div class="sec-label">Simulează Comportament</div>
+      <div class="signal-grid">
+        <div class="sig-card clickable" onclick="simEvent('product_view')"><div class="sig-icon">👁</div><div class="sig-name">Product View</div><div class="sig-desc">Vede un produs</div></div>
+        <div class="sig-card clickable" onclick="simEvent('spec_dwell')"><div class="sig-icon">📋</div><div class="sig-name">Spec Dwell</div><div class="sig-desc">Stă pe specs</div></div>
+        <div class="sig-card clickable" onclick="simEvent('cart_add')"><div class="sig-icon">🛒</div><div class="sig-name">Cart Add</div><div class="sig-desc">Adaugă în coș</div></div>
+        <div class="sig-card clickable" onclick="simEvent('cart_remove')"><div class="sig-icon">❌</div><div class="sig-name">Cart Remove</div><div class="sig-desc">Scoate din coș</div></div>
+        <div class="sig-card clickable" onclick="simEvent('price_hover')"><div class="sig-icon">💰</div><div class="sig-name">Price Hover</div><div class="sig-desc">Ezitare la preț</div></div>
+        <div class="sig-card clickable" onclick="simEvent('direct_checkout')"><div class="sig-icon">🚀</div><div class="sig-name">Direct Checkout</div><div class="sig-desc">Merge la plată</div></div>
+      </div>
+    </div>
+
+    <!-- DIM 3 -->
+    <div class="dim-panel" id="dim2">
+      <div class="sec-label">Istoric Vizite — Product #A247</div>
+      <div class="visit-history">
+        <div class="vh-header"><span class="vh-title">📅 Cross-Session History</span><span class="vh-count" id="visitCount">5 vizite</span></div>
+        <table class="vh-table">
+          <thead><tr><th>Data</th><th>Durata</th><th>Acțiuni</th><th>Intent</th></tr></thead>
+          <tbody id="visitHistory">
+            <tr><td class="highlight">Lun 24 Feb</td><td>1m 12s</td><td>2 views, 0 cart</td><td class="intent intent-unknown">— Explorare</td></tr>
+            <tr><td class="highlight">Mar 25 Feb</td><td>3m 41s</td><td>spec dwell, price hover</td><td class="intent intent-researching">📊 Cercetare</td></tr>
+            <tr><td class="highlight">Mie 26 Feb</td><td>2m 08s</td><td>cart add, cart remove</td><td class="intent intent-waiting">⏳ Așteaptă reducere</td></tr>
+            <tr><td class="highlight">Joi 27 Feb</td><td>4m 55s</td><td>cart add/remove ×2</td><td class="intent intent-waiting">⏳ Așteaptă reducere</td></tr>
+            <tr><td class="highlight">Vin 28 Feb</td><td>1m 30s</td><td>price hover, exit</td><td class="intent intent-waiting">⏳ Așteaptă reducere</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-label">Cross-Session Intent Inference</div>
+      <div class="pattern-list">
+        <div class="pattern-card active-pattern"><div class="p-icon">⏳</div><div><div class="p-name">Așteaptă reducere de preț</div><div class="p-trigger">5 vizite × cart_add + cart_remove + price_hover</div></div><div class="p-confidence col-teal">87%</div></div>
+        <div class="pattern-card"><div class="p-icon">🎯</div><div><div class="p-name">Produs dorit, preț blocat</div><div class="p-trigger">same product × 5 sessions, no alternatives</div></div><div class="p-confidence col-green">93%</div></div>
+        <div class="pattern-card"><div class="p-icon">💸</div><div><div class="p-name">Frică de commitment</div><div class="p-trigger">cart_remove × 3, exit_intent × 2</div></div><div class="p-confidence col-orange">71%</div></div>
+        <div class="pattern-card"><div class="p-icon">📱</div><div><div class="p-name">Context seară / relaxat</div><div class="p-trigger">visits: 19–22h, mobile, slow scroll</div></div><div class="p-confidence col-blue">64%</div></div>
+      </div>
+      <div class="sec-label">Adaugă Vizită Simulată</div>
+      <div class="signal-grid">
+        <div class="sig-card clickable" onclick="addVisit('Browsing general','unknown')"><div class="sig-icon">🆕</div><div class="sig-name">Vizită nouă</div><div class="sig-desc">Prima interacțiune</div></div>
+        <div class="sig-card clickable" onclick="addVisit('Cart add + remove','waiting')"><div class="sig-icon">🔄</div><div class="sig-name">Add/Remove</div><div class="sig-desc">Coș → șterge</div></div>
+        <div class="sig-card clickable" onclick="addVisit('Checkout finalizat ✓','decided')"><div class="sig-icon">✅</div><div class="sig-name">Conversie!</div><div class="sig-desc">A cumpărat</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <p class="sec-label">Intenție Detectată</p>
+    <div class="intent-card" id="intentCard">
+      <div class="ic-label">Emotion State Output</div>
+      <div class="ic-state" id="icState" style="color:var(--dim)">Inițializare...</div>
+      <div class="ic-sub" id="icSub" style="color:var(--dim)">Mișcă mouse-ul în canvas sau simulează evenimente</div>
+      <div class="ic-confidence-row">
+        <span class="ic-conf-label">confidence</span>
+        <div class="ic-conf-bar"><div class="ic-conf-fill" id="icConfFill"></div></div>
+        <span class="ic-conf-val" id="icConfVal">0%</span>
+      </div>
+    </div>
+    <p class="sec-label">Signal Meters</p>
+    <div class="meters">
+      <div class="meter-card"><div class="mc-top"><span class="mc-name"><span class="mc-dot" style="background:var(--red)"></span>Frustration</span><span class="mc-val col-red" id="mFrust">0.00</span></div><div class="mc-track"><div class="mc-fill" id="mFrustFill" style="background:var(--red)"></div></div></div>
+      <div class="meter-card"><div class="mc-top"><span class="mc-name"><span class="mc-dot" style="background:var(--orange)"></span>Confusion</span><span class="mc-val col-orange" id="mConf">0.00</span></div><div class="mc-track"><div class="mc-fill" id="mConfFill" style="background:var(--orange)"></div></div></div>
+      <div class="meter-card"><div class="mc-top"><span class="mc-name"><span class="mc-dot" style="background:var(--pink)"></span>Hesitation</span><span class="mc-val col-pink" id="mHes">0.00</span></div><div class="mc-track"><div class="mc-fill" id="mHesFill" style="background:var(--pink)"></div></div></div>
+      <div class="meter-card"><div class="mc-top"><span class="mc-name"><span class="mc-dot" style="background:var(--green)"></span>Decision</span><span class="mc-val col-green" id="mDec">0.00</span></div><div class="mc-track"><div class="mc-fill" id="mDecFill" style="background:var(--green)"></div></div></div>
+      <div class="meter-card"><div class="mc-top"><span class="mc-name"><span class="mc-dot" style="background:var(--blue)"></span>Research</span><span class="mc-val col-blue" id="mRes">0.00</span></div><div class="mc-track"><div class="mc-fill" id="mResFill" style="background:var(--blue)"></div></div></div>
+      <div class="meter-card"><div class="mc-top"><span class="mc-name"><span class="mc-dot" style="background:var(--teal)"></span>Price Sensitivity</span><span class="mc-val col-teal" id="mPrice">0.00</span></div><div class="mc-track"><div class="mc-fill" id="mPriceFill" style="background:var(--teal)"></div></div></div>
+    </div>
+    <p class="sec-label">Design Action</p>
+    <div class="action-card">
+      <div class="ac-label">→ Input pentru Layer 2</div>
+      <div class="ac-action" id="acAction">Niciun semnal detectat. Layout standard activ.</div>
+    </div>
+    <p class="sec-label">Output Payload → Layer 2</p>
+    <div class="payload-card">
+      <div class="payload-header"><span class="ph-title"><span class="ph-live"></span>emotion_state.json</span></div>
+      <div id="payloadCode">Aștept date...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const S={mouse:{x:0,y:0,vx:0,vy:0,history:[],lastTime:0},signals:{rage:0,jitter:0,exit:0,dwell:0,scroll:0,hover:0,cartAddRemove:0,priceHover:0,specDwell:0,productViews:0,directCheckout:false},scores:{frustration:0,confusion:0,hesitation:0,decision:0,research:0,priceSensitivity:0},intent:'NEUTRAL',confidence:0,sessionStart:Date.now(),crossSession:{totalVisits:5,cartAddRemoves:3,priceHovers:2,sameProductVisits:5},clicks:{times:[]}};
+
+const canvas=document.getElementById('mouseCanvas');
+const ctx=canvas.getContext('2d');
+const mouseArea=document.getElementById('mouseArea');
+const trail=[];
+
+function resizeCanvas(){canvas.width=mouseArea.offsetWidth;canvas.height=mouseArea.offsetHeight}
+resizeCanvas();window.addEventListener('resize',resizeCanvas);
+
+document.addEventListener('mousemove',(e)=>{
+  const rect=mouseArea.getBoundingClientRect();
+  const x=e.clientX-rect.left,y=e.clientY-rect.top;
+  const now=Date.now(),dt=now-S.mouse.lastTime||1;
+  S.mouse.vx=(x-S.mouse.x)/dt;S.mouse.vy=(y-S.mouse.y)/dt;
+  const vel=Math.sqrt(S.mouse.vx**2+S.mouse.vy**2);
+  S.mouse.x=x;S.mouse.y=y;S.mouse.lastTime=now;
+  document.getElementById('coordTag').textContent=`x:${Math.round(x)} y:${Math.round(y)}`;
+  document.getElementById('velocityTag').textContent=`vel: ${vel.toFixed(2)} px/ms`;
+  if(x>0&&x<canvas.width&&y>0&&y<canvas.height){trail.push({x,y,t:now,vel});if(trail.length>60)trail.shift()}
+  S.mouse.history.push({x,y,t:now});if(S.mouse.history.length>20)S.mouse.history.shift();
+  if(S.mouse.history.length>=10){
+    const j=calcJitter(S.mouse.history);
+    if(j>3){S.signals.jitter=Math.min(10,S.signals.jitter+0.3);document.getElementById('jitterCount').textContent=Math.round(S.signals.jitter);document.getElementById('jitterBar').style.width=Math.min(100,S.signals.jitter*10)+'%'}
+  }
+  if(y<30&&e.clientY<50){S.signals.exit++;document.getElementById('exitCount').textContent=S.signals.exit;document.getElementById('exitBar').style.width=Math.min(100,S.signals.exit*20)+'%';addLog('EXIT_INTENT','col-accent',`y:${Math.round(e.clientY)}`);addTimelineEvent('Exit intent detectat','/product')}
+});
+
+document.addEventListener('click',()=>{
+  const now=Date.now();S.clicks.times.push(now);
+  S.clicks.times=S.clicks.times.filter(t=>now-t<2000);
+  if(S.clicks.times.length>=3){S.signals.rage=Math.min(10,S.signals.rage+1);document.getElementById('rageCount').textContent=S.signals.rage;document.getElementById('rageBar').style.width=Math.min(100,S.signals.rage*10)+'%';const c=document.getElementById('sig-rage');c.classList.add('firing');setTimeout(()=>c.classList.remove('firing'),500);addLog('RAGE_CLICK','col-red',`${S.signals.rage} events`)}
+});
+
+let lastScrollY=0,scrollDir=0,scrollThrash=0;
+document.addEventListener('scroll',()=>{const dir=window.scrollY>lastScrollY?1:-1;if(dir!==scrollDir){scrollThrash++;if(scrollThrash>2){S.signals.scroll=Math.min(10,S.signals.scroll+0.5);document.getElementById('scrollCount').textContent=Math.round(S.signals.scroll);document.getElementById('scrollBar').style.width=Math.min(100,S.signals.scroll*10)+'%'}}scrollDir=dir;lastScrollY=window.scrollY});
+
+let dwellTimer=null;
+mouseArea.addEventListener('mouseenter',()=>{dwellTimer=setTimeout(()=>triggerDwell(),3000)});
+mouseArea.addEventListener('mouseleave',()=>clearTimeout(dwellTimer));
+mouseArea.addEventListener('mousemove',()=>{clearTimeout(dwellTimer);dwellTimer=setTimeout(()=>triggerDwell(),3000)});
+function triggerDwell(){S.signals.dwell++;document.getElementById('dwellCount').textContent=S.signals.dwell;document.getElementById('dwellBar').style.width=Math.min(100,S.signals.dwell*20)+'%';addLog('DWELL_DETECTED','col-blue','>3s no move');addTimelineEvent('Pauză lungă fără acțiune','/product')}
+
+function calcJitter(pts){let s=0;for(let i=1;i<pts.length;i++){const dx=pts[i].x-pts[i-1].x,dy=pts[i].y-pts[i-1].y;s+=Math.sqrt(dx*dx+dy*dy)}return s/pts.length}
+
+function renderCanvas(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const now=Date.now();
+  ctx.strokeStyle='rgba(33,38,45,0.5)';ctx.lineWidth=1;
+  for(let x=0;x<canvas.width;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke()}
+  for(let y=0;y<canvas.height;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke()}
+  if(trail.length>1){
+    for(let i=1;i<trail.length;i++){
+      const age=(now-trail[i].t)/2000;if(age>1)continue;
+      const alpha=(1-age)*0.8,vel=trail[i].vel;
+      ctx.beginPath();ctx.moveTo(trail[i-1].x,trail[i-1].y);ctx.lineTo(trail[i].x,trail[i].y);
+      ctx.strokeStyle=vel>2?`rgba(248,81,73,${alpha})`:vel>0.8?`rgba(227,179,65,${alpha})`:`rgba(124,58,237,${alpha})`;
+      ctx.lineWidth=Math.max(1,3-age*2);ctx.stroke()
+    }
+  }
+  if(S.mouse.x>0){
+    const vel=Math.sqrt(S.mouse.vx**2+S.mouse.vy**2);
+    ctx.beginPath();ctx.arc(S.mouse.x,S.mouse.y,5,0,Math.PI*2);
+    ctx.fillStyle=vel>2?'#F85149':vel>0.8?'#E3B341':'#7C3AED';ctx.fill();
+    ctx.beginPath();ctx.arc(S.mouse.x,S.mouse.y,12,0,Math.PI*2);
+    ctx.strokeStyle=vel>2?'rgba(248,81,73,0.25)':'rgba(124,58,237,0.25)';ctx.lineWidth=1;ctx.stroke()
+  }
+  requestAnimationFrame(renderCanvas)
+}
+renderCanvas();
+
+function computeScores(){
+  const sig=S.signals,cs=S.crossSession;
+  S.scores.frustration=Math.min(1,(sig.rage*0.15+sig.jitter*0.08+sig.scroll*0.1)/3);
+  S.scores.confusion=Math.min(1,(sig.dwell*0.12+sig.hover*0.1+sig.jitter*0.05)/2);
+  S.scores.hesitation=Math.min(1,(sig.exit*0.15+sig.cartAddRemove*0.2+sig.priceHover*0.15)/2);
+  S.scores.decision=Math.min(1,sig.directCheckout?0.9:Math.max(0,0.5-sig.dwell*0.05-sig.exit*0.1));
+  S.scores.research=Math.min(1,(sig.specDwell*0.2+sig.productViews*0.1)/2);
+  S.scores.priceSensitivity=Math.min(1,(sig.priceHover*0.2+sig.cartAddRemove*0.15+cs.cartAddRemoves*0.1+cs.priceHovers*0.08)/2);
+  const intents=[
+    {name:'FRUSTRAT',score:S.scores.frustration,color:'var(--red)',sub:'Utilizatorul e frustrat. Simplifică UI, activează Design Oxygen.',action:'<strong>Design Oxygen</strong>: mărește spațiu alb, elimină elementele secundare, activează asistentul empatic.'},
+    {name:'CONFUZ',score:S.scores.confusion,color:'var(--orange)',sub:'Utilizatorul e blocat cognitiv. Activează Spotlight Mode.',action:'<strong>Spotlight Mode</strong>: blurează fundalul, pune glow pe pasul următor, afișează tooltip proactiv.'},
+    {name:'EZITANT',score:S.scores.hesitation,color:'var(--pink)',sub:'Vrea produsul dar îi e frică. Activează Negotiator Mode.',action:'<strong>Negotiator Mode</strong>: afișează garanție retur, reviews, oferă reducere sau rate.'},
+    {name:'HOTĂRÂT',score:S.scores.decision,color:'var(--green)',sub:'Știe ce vrea. Dă-i Express Lane fără fricțiuni.',action:'<strong>Express Lane</strong>: ascunde bannerele, mărește butoanele de acțiune, simplifică checkout.'},
+    {name:'CERCETARE',score:S.scores.research,color:'var(--blue)',sub:'Compară și analizează. Oferă-i date, nu presiune.',action:'<strong>Research Mode</strong>: extinde specs, afișează comparator, adaugă reviews tehnice.'},
+    {name:'PREȚ SENSIBIL',score:S.scores.priceSensitivity,color:'var(--teal)',sub:'Vrea produsul dar prețul e bariera. 5 vizite fără cumpărare.',action:'<strong>Price Alert Mode</strong>: arată istoric preț, activează notificare reducere, afișează opțiuni de rate.'},
+  ];
+  let dominant=intents.reduce((a,b)=>a.score>b.score?a:b);
+  if(dominant.score<0.05)dominant={name:'NEUTRAL',score:0,color:'var(--muted)',sub:'Niciun semnal puternic. UI standard activ.',action:'Continuă cu layout standard. Monitorizează semnalele.'};
+  S.intent=dominant.name;S.confidence=Math.min(100,Math.round(dominant.score*120));
+  updateUI(dominant,intents);
+}
+
+function updateUI(dominant,intents){
+  document.getElementById('intentCard').classList.toggle('has-intent',dominant.score>0.05);
+  document.getElementById('icState').style.color=dominant.color;
+  document.getElementById('icState').textContent=dominant.name;
+  document.getElementById('icSub').textContent=dominant.sub;
+  document.getElementById('icConfFill').style.width=S.confidence+'%';
+  document.getElementById('icConfVal').textContent=S.confidence+'%';
+  const rs=document.getElementById('realtimeState');
+  rs.textContent=dominant.name;rs.style.color=dominant.color;rs.style.borderColor=dominant.color;
+  [['mFrust','mFrustFill',S.scores.frustration],['mConf','mConfFill',S.scores.confusion],['mHes','mHesFill',S.scores.hesitation],['mDec','mDecFill',S.scores.decision],['mRes','mResFill',S.scores.research],['mPrice','mPriceFill',S.scores.priceSensitivity]].forEach(([v,f,s])=>{document.getElementById(v).textContent=s.toFixed(2);document.getElementById(f).style.width=Math.round(s*100)+'%'});
+  document.getElementById('acAction').innerHTML=dominant.action;
+  document.getElementById('payloadCode').innerHTML=syntaxHighlight(buildPayload(dominant));
+}
+
+function buildPayload(dominant){
+  return JSON.stringify({timestamp:new Date().toISOString(),session_id:'sess_'+Math.random().toString(36).substr(2,8),emotion_state:{intent:S.intent,confidence:(S.confidence/100).toFixed(2),scores:{frustration:S.scores.frustration.toFixed(2),confusion:S.scores.confusion.toFixed(2),hesitation:S.scores.hesitation.toFixed(2),decision:S.scores.decision.toFixed(2),research:S.scores.research.toFixed(2),price_sensitivity:S.scores.priceSensitivity.toFixed(2)}},signals:{realtime:{rage_clicks:S.signals.rage,mouse_jitter:parseFloat(S.signals.jitter.toFixed(1)),exit_intent:S.signals.exit,dwell_events:S.signals.dwell},session:{product_views:S.signals.productViews,cart_add_remove:S.signals.cartAddRemove,price_hovers:S.signals.priceHover,spec_dwells:S.signals.specDwell},cross_session:{total_visits:S.crossSession.totalVisits,cart_abandons:S.crossSession.cartAddRemoves,price_events:S.crossSession.priceHovers}},recommended_action:dominant.name==='PREȚ SENSIBIL'?'PRICE_ALERT_MODE':dominant.name==='FRUSTRAT'?'DESIGN_OXYGEN':dominant.name==='CONFUZ'?'SPOTLIGHT_MODE':dominant.name==='EZITANT'?'NEGOTIATOR_MODE':dominant.name==='HOTĂRÂT'?'EXPRESS_LANE':dominant.name==='CERCETARE'?'RESEARCH_MODE':'STANDARD'},null,2);
+}
+
+function syntaxHighlight(json){return json.replace(/("[\w_]+"):/g,'<span class="json-key">$1</span>:').replace(/: (".*?")/g,': <span class="json-str">$1</span>').replace(/: (\d+\.?\d*)/g,': <span class="json-num">$1</span>').replace(/: (true|false)/g,': <span class="json-bool">$1</span>').replace(/: (null)/g,': <span class="json-null">$1</span>')}
+
+const sessionEvs={product_view:{text:'Product view',page:'/product/A247',icon:'👁'},spec_dwell:{text:'Spec dwell >10s',page:'/product/A247#specs',icon:'📋'},cart_add:{text:'Adăugat în coș',page:'/cart',icon:'🛒'},cart_remove:{text:'Scos din coș',page:'/cart',icon:'❌'},price_hover:{text:'Hover pe preț >5s',page:'/product/A247',icon:'💰'},direct_checkout:{text:'Direct la checkout',page:'/checkout',icon:'🚀'}};
+
+function simEvent(type){
+  const ev=sessionEvs[type];if(!ev)return;
+  if(type==='product_view')S.signals.productViews++;
+  if(type==='spec_dwell')S.signals.specDwell++;
+  if(type==='cart_remove'){S.signals.cartAddRemove++;S.crossSession.cartAddRemoves++}
+  if(type==='cart_add')S.signals.cartAddRemove+=0.5;
+  if(type==='price_hover'){S.signals.priceHover++;S.crossSession.priceHovers++}
+  if(type==='direct_checkout')S.signals.directCheckout=true;
+  addTimelineEvent(ev.icon+' '+ev.text,ev.page);addLog(type.toUpperCase(),'col-teal',ev.page);updatePatterns();computeScores();
+}
+
+function updatePatterns(){
+  const sig=S.signals;
+  const p={browsing:Math.min(100,sig.productViews*15),research:Math.min(100,sig.specDwell*20+sig.productViews*8),compare:Math.min(100,sig.specDwell*10+sig.priceHover*10),decided:sig.directCheckout?90:Math.min(60,sig.productViews*5),hesitant:Math.min(100,sig.cartAddRemove*20+sig.priceHover*15+sig.exit*10)};
+  Object.entries(p).forEach(([k,v])=>{const e=document.getElementById('pat-'+k+'-conf');if(e)e.textContent=Math.round(v)+'%';const c=document.getElementById('pat-'+k);if(c)c.classList.toggle('active-pattern',v>50)});
+}
+
+function addVisit(actions,intentType){
+  const days=['Dom','Lun','Mar','Mie','Joi','Vin','Sâm'],months=['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'],d=new Date();
+  const date=`${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`,dur=`${Math.floor(Math.random()*4)+1}m ${Math.floor(Math.random()*59)+1}s`;
+  const im={waiting:'<td class="intent intent-waiting">⏳ Așteaptă reducere</td>',decided:'<td class="intent intent-decided">⚡ Cumpărat!</td>',researching:'<td class="intent intent-researching">📊 Cercetare</td>',unknown:'<td class="intent intent-unknown">— Explorare</td>'};
+  const tbody=document.getElementById('visitHistory');const row=document.createElement('tr');
+  row.innerHTML=`<td class="highlight">${date}</td><td>${dur}</td><td>${actions}</td>${im[intentType]||im.unknown}`;
+  row.style.animation='fadeIn 0.3s ease';tbody.appendChild(row);
+  S.crossSession.totalVisits++;if(intentType==='waiting')S.crossSession.cartAddRemoves++;
+  document.getElementById('visitCount').textContent=S.crossSession.totalVisits+' vizite';computeScores();
+}
+
+const pageColors={'/home':'var(--blue)','/product/A247':'var(--accent)','/product/A247#specs':'var(--pink)','/cart':'var(--orange)','/checkout':'var(--green)'};
+function addTimelineEvent(text,page){
+  const el=Math.round((Date.now()-S.sessionStart)/1000),m=Math.floor(el/60),s=el%60;
+  const div=document.createElement('div');div.className='timeline-event';
+  div.innerHTML=`<span class="te-time">${m}:${s.toString().padStart(2,'0')}</span><span class="te-dot" style="background:${pageColors[page]||'var(--muted)'}"></span><span class="te-text">${text}</span><span class="te-page">${page}</span>`;
+  const tl=document.getElementById('sessionTimeline');tl.appendChild(div);tl.scrollTop=tl.scrollHeight;
+}
+
+function addLog(signal,colorClass,value){
+  const now=new Date(),t=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+  const div=document.createElement('div');div.className='el-entry';
+  div.innerHTML=`<span class="el-t">${t}</span><span class="el-sig ${colorClass}">${signal}</span><span class="el-v">${value}</span>`;
+  const log=document.getElementById('eventLog');log.insertBefore(div,log.firstChild);if(log.children.length>20)log.removeChild(log.lastChild);
+}
+function clearLog(){document.getElementById('eventLog').innerHTML=''}
+
+setInterval(()=>{const el=Math.round((Date.now()-S.sessionStart)/1000),m=Math.floor(el/60),s=el%60;document.getElementById('sessionDuration').textContent=`${m}m ${s}s`},1000);
+function switchDim(n){document.querySelectorAll('.dim-tab').forEach((t,i)=>t.classList.toggle('active',i===n));document.querySelectorAll('.dim-panel').forEach((p,i)=>p.classList.toggle('active',i===n))}
+setInterval(()=>{S.signals.jitter=Math.max(0,S.signals.jitter-0.05);S.signals.rage=Math.max(0,S.signals.rage-0.02);computeScores()},300);
+computeScores();addLog('INIT','col-teal','Sensory Layer v1.0 active');
+</script>
+</body>
+</html>

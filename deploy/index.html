@@ -1,0 +1,2552 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Căști Wireless Sony WH-1000XM5 — AudioShop</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #0059A3;
+      --blue-hover: #004a8a;
+      --blue-light: #e8f4fd;
+      --red: #CC0000;
+      --green: #008000;
+      --orange: #f68b1e;
+      --orange-hover: #e07d15;
+      --bg: #FFFFFF;
+      --bg-gray: #F5F5F5;
+      --border: #EEEEEE;
+      --border-dark: #DDDDDD;
+      --text: #333333;
+      --text-light: #666666;
+      --text-muted: #999999;
+      --star: #FFAB00;
+      --purple: #7B2D8E;
+      --shadow: 0 1px 4px rgba(0,0,0,0.08);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.1);
+      --radius: 4px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Open Sans', sans-serif;
+      background: var(--bg-gray);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ==================== HEADER ==================== */
+    .header {
+      background: #fff;
+      border-bottom: 3px solid var(--blue);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      height: 56px;
+      gap: 20px;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--orange);
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+
+    .logo span { color: var(--blue); }
+
+    .header-search {
+      flex: 1;
+      max-width: 580px;
+      display: flex;
+      height: 36px;
+    }
+
+    .header-search input {
+      flex: 1;
+      border: 2px solid var(--border-dark);
+      border-right: none;
+      border-radius: 4px 0 0 4px;
+      padding: 0 12px;
+      font-size: 13px;
+      outline: none;
+      color: var(--text);
+    }
+
+    .header-search input:focus { border-color: var(--blue); }
+
+    .header-search button {
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      padding: 0 16px;
+      border-radius: 0 4px 4px 0;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-light);
+    }
+
+    .header-actions a {
+      color: var(--text-light);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 11px;
+    }
+
+    .header-actions a:hover { color: var(--blue); text-decoration: none; }
+    .header-icon { font-size: 20px; }
+
+    /* ==================== BREADCRUMB ==================== */
+    .breadcrumb-bar {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .breadcrumb {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 10px 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .breadcrumb a { color: var(--text-light); font-size: 12px; }
+    .breadcrumb span { color: var(--text-muted); }
+
+    /* ==================== MAIN LAYOUT ==================== */
+    .main-container {
+      max-width: 1280px;
+      margin: 16px auto;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: 45% 35% 20%;
+      gap: 0;
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    /* ==================== LEFT: IMAGE GALLERY ==================== */
+    .gallery {
+      padding: 24px;
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+
+    .gallery-badge {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: var(--purple);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      z-index: 2;
+    }
+
+    .main-image {
+      background: var(--bg-gray);
+      border-radius: 6px;
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .main-image-display {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: opacity 0.3s;
+      user-select: none;
+    }
+
+    .main-image-label {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.85);
+      padding: 2px 10px;
+      border-radius: 10px;
+    }
+
+    .thumbnails-wrap {
+      position: relative;
+      padding: 0 28px;
+    }
+
+    .thumbnails {
+      display: flex;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .thumb {
+      width: 72px;
+      height: 72px;
+      flex-shrink: 0;
+      background: var(--bg-gray);
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .thumb:hover { border-color: var(--blue); }
+    .thumb.active { border-color: var(--blue); }
+
+    .thumb-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      background: #fff;
+      border: 1px solid var(--border-dark);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-light);
+      z-index: 2;
+    }
+
+    .thumb-arrow:hover { border-color: var(--blue); color: var(--blue); }
+    .thumb-arrow.left { left: 0; }
+    .thumb-arrow.right { right: 0; }
+
+    /* ==================== CENTER: PRODUCT INFO ==================== */
+    .product-info {
+      padding: 24px;
+      border-right: 1px solid var(--border);
+    }
+
+    .rating-line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .stars { color: var(--star); font-size: 14px; letter-spacing: 1px; }
+    .rating-score { font-weight: 700; font-size: 14px; color: var(--text); }
+    .rating-count { font-size: 12px; color: var(--text-light); }
+    .rating-recommend { font-size: 12px; color: var(--green); font-weight: 600; }
+
+    .product-title {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--text);
+      margin: 12px 0 8px;
+    }
+
+    .product-code {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .variant-section { margin-bottom: 20px; }
+
+    .variant-label {
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .variant-options { display: flex; gap: 8px; }
+
+    .variant-btn {
+      padding: 8px 16px;
+      border: 2px solid var(--border-dark);
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .variant-btn:hover { border-color: var(--blue); }
+    .variant-btn.active { border-color: var(--blue); background: var(--blue-light); }
+
+    .variant-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid #ccc;
+    }
+
+    .delivery-section {
+      background: var(--bg-gray);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .delivery-row {
+      display: flex;
+      gap: 8px;
+      font-size: 13px;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .delivery-row:last-child { margin-bottom: 0; }
+    .delivery-icon { flex-shrink: 0; font-size: 16px; }
+    .delivery-label { color: var(--text); }
+    .delivery-sub { color: var(--text-light); font-size: 12px; }
+    .delivery-free { color: var(--green); font-weight: 600; font-size: 12px; }
+    .delivery-link { font-size: 12px; margin-top: 6px; }
+
+    .info-section { margin-top: 16px; }
+
+    .info-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .info-check { color: var(--green); font-size: 14px; flex-shrink: 0; }
+    .info-link { color: var(--blue); font-size: 12px; }
+
+    .brand-section {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 60px;
+      height: 30px;
+      background: var(--text);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 11px;
+      letter-spacing: 2px;
+      border-radius: 3px;
+    }
+
+    .brand-link { font-size: 12px; }
+
+    /* ==================== RIGHT: BUY BOX ==================== */
+    .buy-box {
+      padding: 20px;
+      position: sticky;
+      top: 76px;
+      align-self: start;
+    }
+
+    .price-main {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--red);
+      line-height: 1.1;
+      margin-bottom: 2px;
+    }
+
+    .price-sup { font-size: 16px; vertical-align: super; }
+    .price-currency { font-size: 16px; font-weight: 600; }
+
+    .price-installment {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-bottom: 16px;
+    }
+
+    .price-installment a { font-size: 12px; }
+
+    .seller-line {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-bottom: 4px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .seller-line strong { color: var(--text); }
+    .seller-stars { color: var(--star); font-size: 11px; }
+
+    .stock-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--green);
+      margin: 12px 0 16px;
+    }
+
+    .stock-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+    }
+
+    .btn-cart {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-family: inherit;
+      margin-bottom: 8px;
+    }
+
+    .btn-cart:hover { background: var(--blue-hover); }
+
+    .btn-fav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      padding: 10px;
+      background: #fff;
+      color: var(--blue);
+      border: 2px solid var(--blue);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      margin-bottom: 12px;
+    }
+
+    .btn-fav:hover { background: var(--blue-light); }
+
+    .buy-links {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+    }
+
+    .buy-links a {
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .buy-links a:hover { color: var(--blue); }
+
+    /* ==================== TABS SECTION ==================== */
+    .tabs-container {
+      max-width: 1280px;
+      margin: 16px auto;
+      padding: 0 16px;
+    }
+
+    .tabs-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .tabs-nav {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      background: var(--bg-gray);
+    }
+
+    .tab-btn {
+      padding: 14px 24px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-light);
+      background: none;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      font-family: inherit;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      transition: color 0.2s;
+    }
+
+    .tab-btn:hover { color: var(--blue); }
+
+    .tab-btn.active {
+      color: var(--blue);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--blue);
+    }
+
+    .tab-btn .tab-count {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .tab-panel {
+      display: none;
+      padding: 28px;
+    }
+
+    .tab-panel.active { display: block; }
+
+    /* Tab: Description */
+    .desc-text { color: var(--text); line-height: 1.7; margin-bottom: 16px; font-size: 14px; }
+
+    .desc-features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .desc-feature {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--bg-gray);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .desc-feature-icon { font-size: 22px; }
+
+    .desc-expand {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--blue);
+      font-size: 13px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-weight: 600;
+      font-family: inherit;
+    }
+
+    .desc-hidden { display: none; }
+    .desc-hidden.show { display: block; }
+
+    /* Tab: Specs */
+    .specs-group { margin-bottom: 24px; }
+
+    .specs-group-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--blue);
+      display: inline-block;
+    }
+
+    .specs-table { width: 100%; border-collapse: collapse; }
+
+    .specs-table tr:nth-child(odd) { background: var(--bg-gray); }
+    .specs-table tr:nth-child(even) { background: #fff; }
+
+    .specs-table td {
+      padding: 10px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .specs-table td:first-child {
+      width: 45%;
+      color: var(--text-light);
+      font-weight: 500;
+    }
+
+    .specs-table td:last-child {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Tab: Reviews */
+    .reviews-summary {
+      display: flex;
+      gap: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .reviews-big-score {
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .reviews-big-number {
+      font-size: 48px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .reviews-big-stars { color: var(--star); font-size: 18px; margin: 6px 0; }
+    .reviews-big-count { font-size: 12px; color: var(--text-muted); }
+
+    .reviews-bars { flex: 1; max-width: 400px; }
+
+    .review-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .review-bar-label { width: 24px; text-align: right; color: var(--text-light); font-weight: 600; }
+
+    .review-bar-track {
+      flex: 1;
+      height: 10px;
+      background: var(--border);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .review-bar-fill {
+      height: 100%;
+      background: var(--star);
+      border-radius: 5px;
+      transition: width 0.5s;
+    }
+
+    .review-bar-pct { width: 32px; font-size: 12px; color: var(--text-muted); }
+
+    .review-card {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .review-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .review-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--blue-light);
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .review-name { font-weight: 600; font-size: 13px; }
+    .review-date { font-size: 12px; color: var(--text-muted); }
+    .review-stars { color: var(--star); font-size: 12px; margin-bottom: 4px; }
+    .review-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .review-text { font-size: 13px; color: var(--text-light); line-height: 1.5; }
+
+    .review-useful {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .review-useful:hover { color: var(--blue); }
+
+    .btn-review {
+      margin-top: 20px;
+      padding: 10px 24px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-review:hover { background: var(--blue-hover); }
+
+    /* Tab: Q&A */
+    .qa-item {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .qa-q {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 8px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .qa-q-mark {
+      color: var(--blue);
+      font-weight: 800;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .qa-a {
+      font-size: 13px;
+      color: var(--text-light);
+      padding-left: 24px;
+      line-height: 1.5;
+    }
+
+    .qa-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      padding-left: 24px;
+      margin-top: 4px;
+    }
+
+    .btn-qa {
+      margin-top: 16px;
+      padding: 10px 24px;
+      background: #fff;
+      color: var(--blue);
+      border: 2px solid var(--blue);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-qa:hover { background: var(--blue-light); }
+
+    /* ==================== SIMILAR PRODUCTS ==================== */
+    .similar-section {
+      max-width: 1280px;
+      margin: 16px auto;
+      padding: 0 16px;
+    }
+
+    .similar-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .similar-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .similar-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      text-align: center;
+      transition: box-shadow 0.2s;
+    }
+
+    .similar-card:hover { box-shadow: var(--shadow-md); }
+
+    .similar-img {
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      background: var(--bg-gray);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .similar-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 8px;
+    }
+
+    .similar-name {
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.4;
+      margin-bottom: 6px;
+      height: 34px;
+      overflow: hidden;
+    }
+
+    .similar-stars { color: var(--star); font-size: 11px; margin-bottom: 4px; }
+
+    .similar-price {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--red);
+      margin-bottom: 10px;
+    }
+
+    .similar-price span { font-size: 12px; font-weight: 600; }
+
+    .btn-similar {
+      width: 100%;
+      padding: 8px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-similar:hover { background: var(--blue-hover); }
+
+    /* ==================== FOOTER ==================== */
+    .footer {
+      background: #2d2d2d;
+      color: #ccc;
+      margin-top: 32px;
+    }
+
+    .footer-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 32px 16px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+
+    .footer-col h4 {
+      color: #fff;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .footer-col a {
+      display: block;
+      color: #aaa;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .footer-col a:hover { color: #fff; text-decoration: none; }
+
+    .footer-bottom {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 16px;
+      border-top: 1px solid #444;
+      text-align: center;
+      font-size: 11px;
+      color: #888;
+    }
+
+    /* ==================== SURVEY OVERLAY ==================== */
+    .survey-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s;
+    }
+
+    .survey-overlay.visible { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .survey-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+      position: relative;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .survey-close {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      font-size: 20px;
+      color: var(--text-muted);
+      cursor: pointer;
+      background: none;
+      border: none;
+      line-height: 1;
+    }
+
+    .survey-close:hover { color: var(--text); }
+
+    .survey-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .survey-subtitle {
+      font-size: 14px;
+      color: var(--text-light);
+      margin-bottom: 20px;
+    }
+
+    .survey-stars-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .survey-star {
+      font-size: 36px;
+      cursor: pointer;
+      color: var(--border-dark);
+      transition: color 0.15s, transform 0.15s;
+      background: none;
+      border: none;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .survey-star:hover { transform: scale(1.15); }
+    .survey-star.lit { color: var(--star); }
+
+    .survey-radios { margin-bottom: 16px; }
+
+    .survey-radio-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .survey-radio-label input { accent-color: var(--orange); }
+
+    .survey-textarea {
+      width: 100%;
+      height: 70px;
+      padding: 10px 12px;
+      border: 1px solid var(--border-dark);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      margin-bottom: 16px;
+      outline: none;
+    }
+
+    .survey-textarea:focus { border-color: var(--blue); }
+
+    .btn-survey {
+      width: 100%;
+      padding: 14px;
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .btn-survey:hover { background: var(--orange-hover); }
+
+    .survey-thanks {
+      display: none;
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .survey-thanks-icon { font-size: 48px; margin-bottom: 12px; }
+    .survey-thanks-text { font-size: 16px; color: var(--text); font-weight: 600; }
+
+    /* ==================== ADAPTIVE UI ==================== */
+    body, .main-container, .product-info, .gallery, .buy-box,
+    .tabs-card, .similar-section, .header-actions, .cta-button,
+    .btn-cart, .btn-fav, .tab-btn {
+      transition: all 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* FRUSTRATED */
+    body.emo-frustrated { background: #F8F9FF; }
+    body.emo-frustrated .main-container { padding: 34px; gap: 0; }
+    body.emo-frustrated .gallery { padding: 34px; }
+    body.emo-frustrated .product-info { padding: 34px; }
+    body.emo-frustrated .buy-box { padding: 28px; }
+    body.emo-frustrated .header-actions { opacity: 0; pointer-events: none; }
+    body.emo-frustrated .similar-section { opacity: 0; height: 0; overflow: hidden; margin: 0; padding: 0; }
+
+    /* HESITANT */
+    .emo-guarantee-bar {
+      display: none;
+      margin-top: 10px;
+      padding: 12px 16px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #166534;
+      text-align: center;
+      animation: emoFadeIn 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    body.emo-hesitant .emo-guarantee-bar { display: block; }
+    body.emo-hesitant .tab-btn[data-tab="reviews"] { color: var(--orange); border-bottom: 2px solid var(--orange); }
+
+    /* DECIDED */
+    body.emo-decided .tabs-container { opacity: 0; height: 0; overflow: hidden; margin: 0; pointer-events: none; }
+    body.emo-decided .similar-section { opacity: 0; height: 0; overflow: hidden; margin: 0; padding: 0; }
+    body.emo-decided .btn-cart { transform: scale(1.08); }
+
+    /* PRICE_SENSITIVE */
+    .emo-price-history {
+      display: none;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #166534;
+      font-weight: 600;
+      animation: emoFadeIn 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    body.emo-price-sensitive .emo-price-history { display: block; }
+
+    /* RESEARCHING */
+    .emo-compare-link {
+      display: none;
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      animation: emoFadeIn 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .emo-compare-link a { color: var(--blue); }
+    body.emo-researching .emo-compare-link { display: block; }
+    body.emo-researching .tab-btn[data-tab="specs"] { color: var(--blue); font-weight: 800; background: var(--blue-light); }
+
+    /* CONFUSED */
+    body.emo-confused .btn-cart {
+      box-shadow: 0 0 0 4px rgba(0, 89, 163, 0.18), 0 0 20px rgba(0, 89, 163, 0.12);
+      animation: emoGlow 2s ease-in-out infinite;
+    }
+    body.emo-confused .main-container::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.03);
+      pointer-events: none;
+      z-index: 500;
+      animation: emoFadeIn 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes emoFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes emoGlow {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(0, 89, 163, 0.18), 0 0 20px rgba(0, 89, 163, 0.12); }
+      50% { box-shadow: 0 0 0 8px rgba(0, 89, 163, 0.22), 0 0 32px rgba(0, 89, 163, 0.18); }
+    }
+
+    /* ==================== UR TRANSPARENCY WIDGET ==================== */
+    .emo-ur {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      background: #fff;
+      border: 1px solid var(--border-dark);
+      border-radius: 12px;
+      padding: 14px 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      z-index: 9000;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      max-width: 580px;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .emo-ur.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .emo-ur-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--blue);
+      flex-shrink: 0;
+      animation: emoPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes emoPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .emo-ur-body { flex: 1; }
+    .emo-ur-label { font-weight: 700; color: var(--blue); font-size: 13px; }
+    .emo-ur-desc { font-size: 11px; color: var(--text-light); margin-top: 1px; }
+    .emo-ur-privacy { font-size: 9px; color: var(--text-muted); margin-top: 3px; opacity: 0.7; }
+
+    .emo-ur-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    .emo-ur-btn {
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border-dark);
+      background: #fff;
+      color: var(--text);
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .emo-ur-btn:hover { background: var(--bg-gray); }
+
+    .emo-ur-btn-keep {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+    .emo-ur-btn-keep:hover { background: var(--blue); color: #fff; }
+
+    .emo-ur-btn-reset {
+      border-color: var(--red);
+      color: var(--red);
+    }
+    .emo-ur-btn-reset:hover { background: var(--red); color: #fff; }
+
+    /* ==================== WEB BLUETOOTH WEARABLE ==================== */
+    .ble-widget {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 9000;
+    }
+
+    .ble-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border-dark);
+      background: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    .ble-btn:hover { background: #fef2f2; border-color: #fca5a5; }
+
+    .ble-status {
+      font-size: 11px;
+      color: var(--text-light);
+      background: #fff;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .ble-status:empty { display: none; }
+    .ble-connected .ble-btn { border-color: #ef4444; background: #fef2f2; }
+    .ble-connected .ble-status { color: #ef4444; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">Audio<span>Shop</span></div>
+      <div class="header-search">
+        <input type="text" placeholder="Caută produse, branduri și categorii...">
+        <button>🔍</button>
+      </div>
+      <div class="header-actions">
+        <a href="#"><span class="header-icon">👤</span>Contul meu</a>
+        <a href="#"><span class="header-icon">♡</span>Favorite</a>
+        <a href="#"><span class="header-icon">🛒</span>Coș</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== BREADCRUMB ==================== -->
+  <div class="breadcrumb-bar">
+    <nav class="breadcrumb">
+      <a href="#">PC, Periferice & Software</a> <span>/</span>
+      <a href="#">Căști & Audio</a> <span>/</span>
+      <a href="#">Căști Wireless</a> <span>/</span>
+      <span>Sony WH-1000XM5</span>
+    </nav>
+  </div>
+
+  <!-- ==================== MAIN 3-COLUMN ==================== -->
+  <div class="main-container">
+
+    <!-- LEFT: Gallery -->
+    <div class="gallery">
+      <div class="gallery-badge">Genius</div>
+      <div class="main-image" id="main-image">
+        <img class="main-image-display" id="main-img-display" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600" alt="Sony WH-1000XM5">
+        <div class="main-image-label" id="main-img-label">Vedere frontală</div>
+      </div>
+      <div class="thumbnails-wrap">
+        <div class="thumb-arrow left" id="thumb-left">‹</div>
+        <div class="thumbnails" id="thumbnails">
+          <div class="thumb active" data-idx="0" data-src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600" data-label="Vedere frontală"><img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200" alt="Front"></div>
+          <div class="thumb" data-idx="1" data-src="https://images.unsplash.com/photo-1484704849700-f032a568e944?w=600" data-label="Vedere laterală"><img src="https://images.unsplash.com/photo-1484704849700-f032a568e944?w=200" alt="Side"></div>
+          <div class="thumb" data-idx="2" data-src="https://images.unsplash.com/photo-1524678606370-a47ad25cb82a?w=600" data-label="Pliat compact"><img src="https://images.unsplash.com/photo-1524678606370-a47ad25cb82a?w=200" alt="Folded"></div>
+          <div class="thumb" data-idx="3" data-src="https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600" data-label="Husă transport"><img src="https://images.unsplash.com/photo-1583394838336-acd977736f90?w=200" alt="Case"></div>
+          <div class="thumb" data-idx="4" data-src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=600" data-label="Detaliu USB-C"><img src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=200" alt="Detail"></div>
+          <div class="thumb" data-idx="5" data-src="https://images.unsplash.com/photo-1487215078519-e21cc028cb29?w=600" data-label="Purtare in-ear"><img src="https://images.unsplash.com/photo-1487215078519-e21cc028cb29?w=200" alt="Wearing"></div>
+        </div>
+        <div class="thumb-arrow right" id="thumb-right">›</div>
+      </div>
+    </div>
+
+    <!-- CENTER: Product Info -->
+    <div class="product-info" id="product-info">
+      <div class="rating-line">
+        <span class="stars">★★★★★</span>
+        <span class="rating-score">4.75</span>
+        <span class="rating-count">(2.341 de review-uri)</span>
+        <span class="rating-recommend">94% clienți recomandă produsul</span>
+      </div>
+
+      <h1 class="product-title">Căști Wireless Sony WH-1000XM5, Noise Cancelling Adaptiv AI, 30h Autonomie, LDAC Hi-Res Audio, Multipoint, Negru</h1>
+      <div class="product-code">Cod produs: WH1000XM5/B</div>
+
+      <div class="variant-section">
+        <div class="variant-label">Alege Culoarea: <strong>Negru</strong></div>
+        <div class="variant-options" id="variant-options">
+          <button class="variant-btn active" data-color="Negru">
+            <span class="variant-dot" style="background:#1a1a1a"></span> Negru
+          </button>
+          <button class="variant-btn" data-color="Argintiu">
+            <span class="variant-dot" style="background:#c0c0c0"></span> Argintiu
+          </button>
+          <button class="variant-btn" data-color="Midnight Blue">
+            <span class="variant-dot" style="background:#191970"></span> Midnight Blue
+          </button>
+        </div>
+      </div>
+
+      <div class="delivery-section">
+        <div class="delivery-row">
+          <span class="delivery-icon">🟢</span>
+          <div>
+            <div class="delivery-label"><strong>Estimat livrare în: Timișoara</strong></div>
+          </div>
+        </div>
+        <div class="delivery-row">
+          <span class="delivery-icon">📦</span>
+          <div>
+            <div class="delivery-label">Ridicare personală din: <strong>SAMEDAY Point</strong></div>
+            <div class="delivery-sub">Începând de mâine, după 16:00</div>
+            <div class="delivery-free">Gratuit</div>
+          </div>
+        </div>
+        <div class="delivery-link"><a href="#">→ vezi toate opțiunile de livrare</a></div>
+      </div>
+
+      <div class="info-section">
+        <div class="info-row">
+          <span class="info-check">✓</span>
+          <div>
+            Garanție inclusă: <strong>24 luni</strong> (persoane fizice) / <strong>12 luni</strong> (juridice)
+            <a href="#" class="info-link">— extinde</a>
+          </div>
+        </div>
+        <div class="info-row">
+          <span class="info-check">✓</span>
+          <div>Asigurare avarii și furt <strong>Protect+</strong></div>
+        </div>
+        <div class="info-row">
+          <span class="info-check">✓</span>
+          <div>Protejează-ți bunul</div>
+        </div>
+      </div>
+
+      <div class="emo-compare-link"><a href="#">⚖️ Compară cu produse similare →</a></div>
+
+      <div class="brand-section">
+        <div class="brand-logo">SONY</div>
+        <a href="#" class="brand-link">Vezi toate produsele Sony</a>
+      </div>
+    </div>
+
+    <!-- RIGHT: Buy Box -->
+    <div class="buy-box" id="buy-box">
+      <div class="price-main" id="price-area" data-emotion-track="price">
+        1.299<span class="price-sup">00</span> <span class="price-currency">Lei</span>
+      </div>
+      <div class="emo-price-history">📉 Cel mai mic preț din ultimele 6 luni — economisești 200 Lei</div>
+      <div class="price-installment">
+        Rate lunare de la <strong>108<sup>00</sup> Lei</strong> — <a href="#">vezi detalii</a>
+      </div>
+      <div class="seller-line">
+        Vândut și livrat de: <strong>AudioShop</strong> <span class="seller-stars">★★★★☆</span> 4.8
+      </div>
+      <div class="stock-status">
+        <span class="stock-dot"></span> În stoc
+      </div>
+      <button class="btn-cart" id="btn-cart">🛒 Adaugă în Coș</button>
+      <button class="btn-fav" id="btn-fav">♡ Adaugă la Favorite</button>
+      <div class="emo-guarantee-bar">🛡 30 zile retur gratuit · Garanție 2 ani inclusă · Rate de la 108 Lei/lună, 0% dobândă</div>
+      <div class="buy-links">
+        <a href="#">↗ Distribuie</a>
+        <a href="#">⚖ Compară</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TABS ==================== -->
+  <div class="tabs-container">
+    <div class="tabs-card">
+      <div class="tabs-nav" id="tabs-nav">
+        <button class="tab-btn active" data-tab="desc">Descriere Produs</button>
+        <button class="tab-btn" data-tab="specs">Specificații Tehnice</button>
+        <button class="tab-btn" data-tab="reviews">Review-uri <span class="tab-count">(2.341)</span></button>
+        <button class="tab-btn" data-tab="qa">Întrebări & Răspunsuri</button>
+      </div>
+
+      <!-- TAB: Description -->
+      <div class="tab-panel active" id="tab-desc">
+        <p class="desc-text">Experimentează sunetul premium cu Sony WH-1000XM5, cele mai avansate căști wireless din seria 1000X. Echipate cu procesorul integrat V1, acestea oferă o anulare a zgomotului fără precedent, adaptându-se automat la mediul tău prin intermediul inteligenței artificiale. Fie că ești în avion, la birou sau pe stradă, XM5 creează o bulă de liniște perfectă în jurul tău.</p>
+
+        <p class="desc-text">Driverele de 30mm din fibră de carbon, special dezvoltate pentru XM5, redau frecvențe de la 4Hz la 40kHz — depășind cu mult spectrul audio perceptibil uman. Cu suport pentru codecul LDAC, poți asculta muzică în calitate Hi-Res Audio wireless, fiecare nuanță și detaliu fiind redat cu fidelitate de studio.</p>
+
+        <div class="desc-features">
+          <div class="desc-feature"><span class="desc-feature-icon">🎵</span> LDAC Hi-Res Audio Wireless</div>
+          <div class="desc-feature"><span class="desc-feature-icon">🔇</span> Noise Cancelling AI Adaptiv</div>
+          <div class="desc-feature"><span class="desc-feature-icon">🔋</span> 30h Autonomie + Încărcare Rapidă</div>
+          <div class="desc-feature"><span class="desc-feature-icon">📱</span> Multipoint — 2 dispozitive simultan</div>
+        </div>
+
+        <div class="desc-hidden" id="desc-more">
+          <p class="desc-text">Conectivitatea Multipoint permite asocierea simultană cu două dispozitive — treci instantaneu de la laptop la telefon fără reconectare manuală. Apelurile vocale beneficiază de 4 microfoane beamforming cu reducerea zgomotului bazată pe AI, asigurând claritate impecabilă chiar și în medii zgomotoase.</p>
+          <p class="desc-text">Designul pliabil și ușor (250g) face din XM5 compagnionul ideal pentru călătorii. Încărcarea rapidă USB-C oferă 3 ore de redare din doar 3 minute de încărcare, iar autonomia totală de 30 ore cu ANC activ te ține conectat zi de zi. Toate materialele sunt certificate pentru durabilitate și confort extins.</p>
+        </div>
+
+        <button class="desc-expand" id="desc-expand">Citește mai mult ▼</button>
+      </div>
+
+      <!-- TAB: Specs -->
+      <div class="tab-panel" id="tab-specs" data-emotion-track="spec">
+        <div class="specs-group">
+          <div class="specs-group-title">General</div>
+          <table class="specs-table">
+            <tr><td>Tip</td><td>Over-ear, circumaural</td></tr>
+            <tr><td>Culoare</td><td>Negru</td></tr>
+            <tr><td>Greutate</td><td>250 g</td></tr>
+            <tr><td>Material</td><td>Plastic reciclat, piele sintetică</td></tr>
+            <tr><td>Design pliabil</td><td>Da</td></tr>
+          </table>
+        </div>
+        <div class="specs-group">
+          <div class="specs-group-title">Conectivitate</div>
+          <table class="specs-table">
+            <tr><td>Bluetooth</td><td>5.2</td></tr>
+            <tr><td>Codecuri suportate</td><td>LDAC, AAC, SBC</td></tr>
+            <tr><td>Multipoint</td><td>Da (2 dispozitive)</td></tr>
+            <tr><td>NFC</td><td>Da</td></tr>
+            <tr><td>Cablu audio</td><td>Jack 3.5mm inclus</td></tr>
+            <tr><td>USB</td><td>USB-C (încărcare + audio)</td></tr>
+          </table>
+        </div>
+        <div class="specs-group">
+          <div class="specs-group-title">Audio</div>
+          <table class="specs-table">
+            <tr><td>Driver</td><td>30mm, fibră de carbon</td></tr>
+            <tr><td>Răspuns în frecvență</td><td>4 Hz – 40.000 Hz</td></tr>
+            <tr><td>Impedanță</td><td>48 Ω (1 kHz)</td></tr>
+            <tr><td>Hi-Res Audio</td><td>Da (wireless via LDAC)</td></tr>
+            <tr><td>DSEE Extreme</td><td>Da</td></tr>
+            <tr><td>360 Reality Audio</td><td>Da</td></tr>
+          </table>
+        </div>
+        <div class="specs-group">
+          <div class="specs-group-title">Baterie</div>
+          <table class="specs-table">
+            <tr><td>Autonomie</td><td>30 ore (ANC pornit)</td></tr>
+            <tr><td>Autonomie fără ANC</td><td>40 ore</td></tr>
+            <tr><td>Încărcare rapidă</td><td>3 min → 3 ore redare</td></tr>
+            <tr><td>Timp încărcare completă</td><td>3.5 ore</td></tr>
+            <tr><td>Port încărcare</td><td>USB-C</td></tr>
+          </table>
+        </div>
+        <div class="specs-group">
+          <div class="specs-group-title">Funcții speciale</div>
+          <table class="specs-table">
+            <tr><td>Noise Cancelling</td><td>HD ANC cu procesor QN1 + V1</td></tr>
+            <tr><td>ANC adaptiv AI</td><td>Da — Auto NC Optimizer</td></tr>
+            <tr><td>Speak-to-Chat</td><td>Da</td></tr>
+            <tr><td>Ambient Sound</td><td>Da (20 nivele)</td></tr>
+            <tr><td>Wear Detection</td><td>Da — pauză/redare automată</td></tr>
+            <tr><td>Asistent vocal</td><td>Google Assistant, Alexa, Siri</td></tr>
+            <tr><td>Touch Control</td><td>Da — panou tactil complet</td></tr>
+          </table>
+        </div>
+        <div class="specs-group">
+          <div class="specs-group-title">Conținut pachet</div>
+          <table class="specs-table">
+            <tr><td>Căști</td><td>1x Sony WH-1000XM5</td></tr>
+            <tr><td>Husă transport</td><td>Da, rigidă</td></tr>
+            <tr><td>Cablu USB-C</td><td>Da (~20cm)</td></tr>
+            <tr><td>Cablu audio 3.5mm</td><td>Da (~1.2m)</td></tr>
+            <tr><td>Adaptor avion</td><td>Da</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: Reviews -->
+      <div class="tab-panel" id="tab-reviews">
+        <div class="reviews-summary">
+          <div class="reviews-big-score">
+            <div class="reviews-big-number">4.75</div>
+            <div class="reviews-big-stars">★★★★★</div>
+            <div class="reviews-big-count">2.341 review-uri</div>
+          </div>
+          <div class="reviews-bars">
+            <div class="review-bar-row"><span class="review-bar-label">5★</span><div class="review-bar-track"><div class="review-bar-fill" style="width:78%"></div></div><span class="review-bar-pct">78%</span></div>
+            <div class="review-bar-row"><span class="review-bar-label">4★</span><div class="review-bar-track"><div class="review-bar-fill" style="width:15%"></div></div><span class="review-bar-pct">15%</span></div>
+            <div class="review-bar-row"><span class="review-bar-label">3★</span><div class="review-bar-track"><div class="review-bar-fill" style="width:5%"></div></div><span class="review-bar-pct">5%</span></div>
+            <div class="review-bar-row"><span class="review-bar-label">2★</span><div class="review-bar-track"><div class="review-bar-fill" style="width:1%"></div></div><span class="review-bar-pct">1%</span></div>
+            <div class="review-bar-row"><span class="review-bar-label">1★</span><div class="review-bar-track"><div class="review-bar-fill" style="width:1%"></div></div><span class="review-bar-pct">1%</span></div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div class="review-header"><div class="review-avatar">AM</div><div><div class="review-name">Andrei M.</div><div class="review-date">12 februarie 2026</div></div></div>
+          <div class="review-stars">★★★★★</div>
+          <div class="review-title">Cele mai bune căști pe care le-am avut vreodată</div>
+          <div class="review-text">Am trecut de la XM3 la XM5 și diferența e uriașă. ANC-ul e pe alt nivel — nu mai aud absolut nimic în avion. Sunetul e cald, detaliat, basul e profund fără să fie exagerat. Foarte confortabile chiar și după 5-6 ore de purtat continuu.</div>
+          <div class="review-useful">👍 Util (47)</div>
+        </div>
+
+        <div class="review-card">
+          <div class="review-header"><div class="review-avatar">EC</div><div><div class="review-name">Elena C.</div><div class="review-date">3 februarie 2026</div></div></div>
+          <div class="review-stars">★★★★★</div>
+          <div class="review-title">Merită fiecare leu</div>
+          <div class="review-text">Le folosesc zilnic la birou. Funcția Speak-to-Chat e genială — oprește muzica instant când vorbesc cu colegii. Multipoint merge impecabil între laptop și telefon. Calitatea apelurilor e excelentă conform feedback-ului de la colegi.</div>
+          <div class="review-useful">👍 Util (31)</div>
+        </div>
+
+        <div class="review-card">
+          <div class="review-header"><div class="review-avatar">RM</div><div><div class="review-name">Radu M.</div><div class="review-date">28 ianuarie 2026</div></div></div>
+          <div class="review-stars">★★★★☆</div>
+          <div class="review-title">Aproape perfecte, mic minus la apel</div>
+          <div class="review-text">Sunetul e spectaculos, ANC-ul excelent, bateria ține o veșnicie. Singurul minus: în vânt puternic, calitatea microfonului scade puțin la apeluri. În rest, upgrade major față de orice am avut. Husa rigidă e un bonus foarte apreciat.</div>
+          <div class="review-useful">👍 Util (23)</div>
+        </div>
+
+        <div class="review-card">
+          <div class="review-header"><div class="review-avatar">DP</div><div><div class="review-name">Diana P.</div><div class="review-date">15 ianuarie 2026</div></div></div>
+          <div class="review-stars">★★★★★</div>
+          <div class="review-title">Cadoul perfect</div>
+          <div class="review-text">Le-am luat cadou soțului și e îndrăgostit de ele. Le poartă non-stop. Designul e elegant și discret, se pliază compact. Conectarea e instantanee, aplicația Sony Headphones Connect oferă multe opțiuni de personalizare.</div>
+          <div class="review-useful">👍 Util (18)</div>
+        </div>
+
+        <div class="review-card">
+          <div class="review-header"><div class="review-avatar">MT</div><div><div class="review-name">Mihai T.</div><div class="review-date">9 ianuarie 2026</div></div></div>
+          <div class="review-stars">★★★★★</div>
+          <div class="review-title">Best noise cancelling, punct.</div>
+          <div class="review-text">Am testat Bose QC Ultra, AirPods Max și Sony XM5 — Sony câștigă la ANC cu un avantaj clar. Plus că sunt mult mai ușoare decât AirPods Max și se pliază. LDAC face o diferență audibilă față de AAC. Recomand fără ezitare.</div>
+          <div class="review-useful">👍 Util (52)</div>
+        </div>
+
+        <button class="btn-review">Scrie o recenzie</button>
+      </div>
+
+      <!-- TAB: Q&A -->
+      <div class="tab-panel" id="tab-qa">
+        <div class="qa-item">
+          <div class="qa-q"><span class="qa-q-mark">Î:</span> Se pot folosi cu cablu când se descarcă bateria?</div>
+          <div class="qa-a"><strong>R:</strong> Da, se pot folosi pasiv cu cablul audio 3.5mm inclus. ANC-ul nu va funcționa fără baterie, dar sunetul se aude normal.</div>
+          <div class="qa-meta">Răspuns de AudioShop · 5 feb 2026 · 34 persoane au considerat util</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q"><span class="qa-q-mark">Î:</span> Funcționează simultan cu telefonul și laptopul?</div>
+          <div class="qa-a"><strong>R:</strong> Da, funcția Multipoint permite conectarea simultană la 2 dispozitive. Sunetul comută automat — dacă primești un apel pe telefon în timp ce asculți muzică de pe laptop, căștile trec automat pe telefon.</div>
+          <div class="qa-meta">Răspuns de AudioShop · 1 feb 2026 · 28 persoane au considerat util</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q"><span class="qa-q-mark">Î:</span> Sunt potrivite pentru alergat sau sport?</div>
+          <div class="qa-a"><strong>R:</strong> WH-1000XM5 sunt căști over-ear, deci nu sunt ideale pentru sport intens. Pentru activități sportive, recomandăm Sony WF-1000XM5 (in-ear) care au certificare IPX4 pentru rezistență la transpirație.</div>
+          <div class="qa-meta">Răspuns de AudioShop · 22 ian 2026 · 19 persoane au considerat util</div>
+        </div>
+
+        <button class="btn-qa">Adaugă întrebare</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SIMILAR PRODUCTS ==================== -->
+  <div class="similar-section">
+    <h2 class="similar-title">Produse similare</h2>
+    <div class="similar-grid">
+      <div class="similar-card">
+        <div class="similar-img"><img src="https://images.unsplash.com/photo-1484704849700-f032a568e944?w=200" alt="Sony XM4"></div>
+        <div class="similar-name">Căști Wireless Sony WH-1000XM4, ANC, 30h, Negru</div>
+        <div class="similar-stars">★★★★★ 4.6</div>
+        <div class="similar-price">899<sup>00</sup> <span>Lei</span></div>
+        <button class="btn-similar">Adaugă în Coș</button>
+      </div>
+      <div class="similar-card">
+        <div class="similar-img"><img src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=200" alt="Bose QC45"></div>
+        <div class="similar-name">Căști Wireless Bose QuietComfort 45, ANC, 24h</div>
+        <div class="similar-stars">★★★★☆ 4.5</div>
+        <div class="similar-price">1.149<sup>00</sup> <span>Lei</span></div>
+        <button class="btn-similar">Adaugă în Coș</button>
+      </div>
+      <div class="similar-card">
+        <div class="similar-img"><img src="https://images.unsplash.com/photo-1524678606370-a47ad25cb82a?w=200" alt="Jabra 85h"></div>
+        <div class="similar-name">Căști Wireless Jabra Elite 85h, ANC, SmartSound</div>
+        <div class="similar-stars">★★★★☆ 4.3</div>
+        <div class="similar-price">749<sup>00</sup> <span>Lei</span></div>
+        <button class="btn-similar">Adaugă în Coș</button>
+      </div>
+      <div class="similar-card">
+        <div class="similar-img"><img src="https://images.unsplash.com/photo-1583394838336-acd977736f90?w=200" alt="AirPods Max"></div>
+        <div class="similar-name">Apple AirPods Max, ANC, Spatial Audio, 20h</div>
+        <div class="similar-stars">★★★★☆ 4.4</div>
+        <div class="similar-price">2.499<sup>00</sup> <span>Lei</span></div>
+        <button class="btn-similar">Adaugă în Coș</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-col">
+        <h4>Informații</h4>
+        <a href="#">Despre noi</a><a href="#">Contact</a><a href="#">Cariere</a><a href="#">Blog</a><a href="#">Presă</a>
+      </div>
+      <div class="footer-col">
+        <h4>Ajutor</h4>
+        <a href="#">Cum cumpăr</a><a href="#">Livrare</a><a href="#">Retur & garanție</a><a href="#">Plată în rate</a><a href="#">FAQ</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="#">Termeni și condiții</a><a href="#">Politica de confidențialitate</a><a href="#">Cookies</a><a href="#">ANPC</a>
+      </div>
+      <div class="footer-col">
+        <h4>Urmărește-ne</h4>
+        <a href="#">Facebook</a><a href="#">Instagram</a><a href="#">YouTube</a><a href="#">TikTok</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2026 AudioShop — Proiect demonstrativ EmotionUI. Nu este un magazin real.
+    </div>
+  </footer>
+
+  <!-- ==================== SURVEY OVERLAY ==================== -->
+  <div class="survey-overlay" id="survey-overlay">
+    <div class="survey-card">
+      <button class="survey-close" id="survey-close">✕</button>
+
+      <div id="survey-form">
+        <div class="survey-title">Părerea ta contează!</div>
+        <div class="survey-subtitle">Cum a fost experiența pe această pagină?</div>
+
+        <div class="survey-stars-row" id="survey-stars">
+          <button class="survey-star" data-star="1">★</button>
+          <button class="survey-star" data-star="2">★</button>
+          <button class="survey-star" data-star="3">★</button>
+          <button class="survey-star" data-star="4">★</button>
+          <button class="survey-star" data-star="5">★</button>
+        </div>
+
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">Ce descrie cel mai bine situația ta?</div>
+        <div class="survey-radios" id="survey-radios">
+          <label class="survey-radio-label"><input type="radio" name="outcome" value="purchased"> Am adăugat în coș / cumpărat</label>
+          <label class="survey-radio-label"><input type="radio" name="outcome" value="hesitant"> Eram aproape să cumpăr dar am ezitat</label>
+          <label class="survey-radio-label"><input type="radio" name="outcome" value="researching"> Mă documentez, poate cumpăr mai târziu</label>
+          <label class="survey-radio-label"><input type="radio" name="outcome" value="price_sensitive"> Prețul e prea mare pentru mine</label>
+          <label class="survey-radio-label"><input type="radio" name="outcome" value="not_interested"> Nu e exact ce căutam</label>
+        </div>
+
+        <textarea class="survey-textarea" id="survey-feedback" placeholder="Ce te-a oprit sau ce ai îmbunătăți? (opțional)"></textarea>
+        <button class="btn-survey" id="survey-submit">Trimite părerea</button>
+      </div>
+
+      <div class="survey-thanks" id="survey-thanks">
+        <div class="survey-thanks-icon">🙏</div>
+        <div class="survey-thanks-text">Mulțumim! Feedback-ul tău ne ajută să îmbunătățim experiența.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ADAPTIVE UI INJECTIONS ==================== -->
+  <!-- Guarantee bar (HESITANT) — injected after CTA -->
+  <!-- Price history (PRICE_SENSITIVE) — injected after price -->
+  <!-- Compare link (RESEARCHING) — injected in product info -->
+
+  <!-- ==================== BIOMETRIC INPUTS DISABLED (EU-SAFE MODE) ==================== -->
+  <div class="ble-widget" id="ble-widget" style="display:flex">
+    <span class="ble-status" id="ble-status">Biometric inputs disabled in EU-safe mode</span>
+  </div>
+
+  <!-- ==================== UR TRANSPARENCY WIDGET ==================== -->
+  <div class="emo-ur" id="emo-ur">
+    <div class="emo-ur-dot"></div>
+    <div class="emo-ur-body">
+      <div class="emo-ur-label" id="emo-ur-label"></div>
+      <div class="emo-ur-desc" id="emo-ur-desc"></div>
+      <div class="emo-ur-privacy">Procesare locală · Zero date în cloud</div>
+    </div>
+    <div class="emo-ur-actions">
+      <button class="emo-ur-btn emo-ur-btn-keep" id="emo-ur-keep">✓ Păstrează</button>
+      <button class="emo-ur-btn" id="emo-ur-standard">↩ Standard</button>
+      <button class="emo-ur-btn emo-ur-btn-reset" id="emo-ur-reset">🗑 Reset</button>
+    </div>
+  </div>
+
+  <!-- ==================== TRACKING + LOGIC ==================== -->
+  <script type="module">
+    // EmotionEngine inlined for self-contained deploy
+    const RULES = [
+      { id: 'R_EXPRESS', state: 'EXPRESS_LANE', weight: 0.88, test: (s) => s.direct_checkout === true, action: 'streamline_checkout', label: 'Express Buyer', description: 'Direct checkout detected' },
+      { id: 'R_PRICE', state: 'PRICE_ALERT_MODE', weight: 0.90, test: (s) => s.price_hover >= 2 && s.cart_abandons >= 2 && s.total_visits >= 3, action: 'show_price_tools', label: 'Price Sensitive', description: 'Repeated price checking' },
+      { id: 'R_FRUSTRATION', state: 'DESIGN_OXYGEN', weight: 0.85, test: (s) => s.rage_clicks >= 4 || (s.mouse_jitter >= 5 && s.scroll_thrash >= 3), action: 'simplify_layout', label: 'Frustrated', description: 'High frustration signals' },
+      { id: 'R_HESITANT', state: 'NEGOTIATOR_MODE', weight: 0.82, test: (s) => s.exit_intent >= 2 && (s.cart_abandons >= 1 || s.price_hover >= 2), action: 'show_reassurance', label: 'Hesitant', description: 'Exit intent with purchase signals' },
+      { id: 'R_RESEARCH', state: 'RESEARCH_MODE', weight: 0.75, test: (s) => s.spec_dwell >= 3 || s.product_views >= 4, action: 'expand_details', label: 'Researcher', description: 'Deep spec engagement' },
+      { id: 'R_CONFUSED', state: 'SPOTLIGHT_MODE', weight: 0.78, test: (s) => s.dwell_events >= 5 || s.dead_clicks >= 3, action: 'highlight_actions', label: 'Confused', description: 'Navigation difficulty' },
+      { id: 'R_NIGHT', state: 'EDITORIAL_MODE', weight: 0.60, test: (s) => s.hour >= 20 && s.mobile === true && s.total_visits <= 2, action: 'editorial_layout', label: 'Night Browser', description: 'Late mobile browsing' },
+    ];
+    const CONFIDENCE_THRESHOLD = 0.25;
+    class EmotionEngine {
+      constructor() { this.rules = RULES; this.currentState = null; this._callbacks = []; }
+      onStateChange(cb) { this._callbacks.push(cb); }
+      _emit(r) { this._callbacks.forEach(cb => cb(r)); }
+      classify(signals) {
+        const matches = [];
+        for (const rule of this.rules) {
+          if (rule.test(signals)) matches.push({ ruleId: rule.id, state: rule.state, action: rule.action, label: rule.label, description: rule.description, weight: rule.weight, confidence: rule.weight });
+        }
+        matches.sort((a, b) => b.weight - a.weight);
+        let result;
+        if (matches.length > 0 && matches[0].confidence >= CONFIDENCE_THRESHOLD) {
+          const w = matches[0];
+          result = { state: w.state, action: w.action, label: w.label, description: w.description, confidence: w.confidence, ruleId: w.ruleId, allMatches: matches, source: 'rules' };
+        } else {
+          result = { state: 'STANDARD', action: 'default', label: 'Standard', description: 'No strong emotional signal', confidence: 0, ruleId: null, allMatches: matches, source: 'rules' };
+        }
+        const changed = !this.currentState || this.currentState.state !== result.state;
+        this.currentState = result;
+        if (changed) this._emit(result);
+        return result;
+      }
+      getState() { return this.currentState; }
+      reset() { this.currentState = null; }
+    }
+
+    // ——————————————————————————————————————————
+    // CONFIG
+    // ——————————————————————————————————————————
+    const SB_URL = 'https://tmhymprkpbxvqhxofxvy.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtaHltcHJrcGJ4dnFoeG9meHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NTY3MzQsImV4cCI6MjA4ODEzMjczNH0.yoL-3aCD2iTBRnmFwZQG5LDe0to7WBbGYBCcnYXcjvI';
+    const SESSION_ID = 'emo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    const PAGE_START = Date.now();
+
+    // ——————————————————————————————————————————
+    // BEHAVIORAL SIGNALS (invisible)
+    // ——————————————————————————————————————————
+    const signals = {
+      rage_clicks: 0,
+      mouse_jitter: 0,
+      exit_intent: 0,
+      dwell_events: 0,
+      scroll_thrash: 0,
+      dead_clicks: 0,
+      product_views: 1,
+      spec_dwell: 0,
+      cart_add_remove: 0,
+      price_hover: 0,
+      direct_checkout: false,
+      total_visits: parseInt(localStorage.getItem('emo_visits') || '0') + 1,
+      cart_abandons: parseInt(localStorage.getItem('emo_abandons') || '0'),
+      hour: new Date().getHours(),
+      mobile: /Mobi|Android/i.test(navigator.userAgent),
+      // Extended
+      image_interactions: 0,
+      tab_switches: [],
+      review_scroll: false,
+      variant_clicks: 0,
+      // NEW: Extended metrics (v2)
+      click_targets: {},
+      hover_targets: {},
+      funnel_stage: 'product_view',
+      scroll_depth: 0,
+      scroll_speed: 'slow',
+      time_on_price: 0,
+      form_errors: 0,
+    };
+    localStorage.setItem('emo_visits', signals.total_visits);
+
+    // NEW: User type detection
+    const userType = localStorage.getItem('emo_visited') ? 'returning' : 'new';
+    localStorage.setItem('emo_visited', 'true');
+
+    // NEW: Traffic source detection
+    const trafficSource = (() => {
+      const params = new URLSearchParams(window.location.search);
+      const utm = params.get('utm_source');
+      if (utm) {
+        if (/facebook|instagram|twitter|tiktok|linkedin/i.test(utm)) return 'social';
+        if (/google|bing|yahoo|duckduckgo/i.test(utm)) return 'organic';
+        if (/cpc|ppc|ad|gclid|fbclid/i.test(utm)) return 'ad';
+        return utm;
+      }
+      const ref = document.referrer;
+      if (!ref) return 'direct';
+      try {
+        const refHost = new URL(ref).hostname;
+        if (refHost === window.location.hostname) return 'direct';
+        if (/google|bing|yahoo|duckduckgo|baidu|yandex/i.test(refHost)) return 'organic';
+        if (/facebook|instagram|twitter|t\.co|tiktok|linkedin|reddit/i.test(refHost)) return 'social';
+        return 'referral';
+      } catch { return 'direct'; }
+    })();
+
+    // NEW: Detailed outcome tracking
+    const outcomeDetail = { added_to_cart: false, checkout_started: false, purchase_completed: false, abandoned_at: 'product_view' };
+
+    // Smoothed emotion scores
+    let smoothed = { confidence: 0, state: 'STANDARD' };
+    const SMOOTH_ALPHA = 0.2;    // emotion_smooth = 0.8 * prev + 0.2 * current
+    const HYSTERESIS_ON = 0.7;
+    const HYSTERESIS_OFF = 0.5;
+    let emotionActive = false;
+
+    const engine = new EmotionEngine();
+
+    function reclassify() {
+      const result = engine.classify(signals);
+      const raw = result.confidence || 0;
+      smoothed.confidence = (1 - SMOOTH_ALPHA) * smoothed.confidence + SMOOTH_ALPHA * raw;
+
+      if (!emotionActive && smoothed.confidence >= HYSTERESIS_ON) {
+        emotionActive = true;
+        smoothed.state = result.state;
+      } else if (emotionActive && smoothed.confidence < HYSTERESIS_OFF) {
+        emotionActive = false;
+        smoothed.state = 'STANDARD';
+      } else if (emotionActive) {
+        smoothed.state = result.state;
+      }
+    }
+
+    // ——— Rage clicks ———
+    const clickLog = [];
+    document.addEventListener('click', (e) => {
+      const now = Date.now();
+      clickLog.push({ x: e.clientX, y: e.clientY, t: now });
+      // Keep last 2s
+      while (clickLog.length > 0 && now - clickLog[0].t > 1000) clickLog.shift();
+      if (clickLog.length >= 3) {
+        const pts = clickLog.slice(-3);
+        let maxDist = 0;
+        for (let i = 0; i < pts.length; i++)
+          for (let j = i + 1; j < pts.length; j++)
+            maxDist = Math.max(maxDist, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
+        if (maxDist < 80) {
+          signals.rage_clicks++;
+          reclassify();
+        }
+      }
+
+      // Dead clicks
+      const tag = e.target.tagName.toLowerCase();
+      const interactive = ['a', 'button', 'input', 'select', 'textarea', 'label'];
+      const isInteractive = interactive.includes(tag) ||
+        e.target.closest('a, button, [role="button"], input, select, textarea') ||
+        window.getComputedStyle(e.target).cursor === 'pointer';
+      if (!isInteractive) {
+        signals.dead_clicks++;
+        reclassify();
+      }
+
+      // NEW: Click target classification
+      const ct = e.target;
+      let clickTarget = 'other';
+      if (ct.closest('#price-area, .price-main, .price-installment')) clickTarget = 'price';
+      else if (ct.closest('#btn-cart')) clickTarget = 'add_to_cart_button';
+      else if (ct.closest('.btn-fav')) clickTarget = 'checkout_button';
+      else if (ct.closest('#tab-specs, [data-tab="specs"]')) clickTarget = 'specs';
+      else if (ct.closest('#tab-reviews, [data-tab="reviews"]')) clickTarget = 'reviews';
+      else if (ct.closest('.gallery, .main-image, .thumb')) clickTarget = 'product_image';
+      else if (ct.closest('.delivery-section')) clickTarget = 'shipping';
+      else if (ct.closest('.info-section, .emo-guarantee-bar')) clickTarget = 'guarantee';
+      signals.click_targets[clickTarget] = (signals.click_targets[clickTarget] || 0) + 1;
+    });
+
+    // ——— Mouse jitter ———
+    const mouseLog = [];
+    document.addEventListener('mousemove', (e) => {
+      const now = Date.now();
+      mouseLog.push({ x: e.clientX, y: e.clientY, t: now });
+      while (mouseLog.length > 0 && now - mouseLog[0].t > 500) mouseLog.shift();
+      if (mouseLog.length >= 5) {
+        let dist = 0;
+        for (let i = 1; i < mouseLog.length; i++)
+          dist += Math.hypot(mouseLog[i].x - mouseLog[i - 1].x, mouseLog[i].y - mouseLog[i - 1].y);
+        const speed = dist / 0.5; // px/s
+        if (speed > 2000) {
+          signals.mouse_jitter = Math.min(10, signals.mouse_jitter + 0.3);
+          reclassify();
+        }
+      }
+    });
+
+    // ——— Exit intent ———
+    document.addEventListener('mouseout', (e) => {
+      if (e.clientY <= 5 && !e.relatedTarget) {
+        signals.exit_intent++;
+        reclassify();
+        checkSurveyTrigger();
+      }
+    });
+
+    // ——— Hover target + duration tracking (NEW) ———
+    const hoverZones = [
+      ['#price-area, .price-main, .price-installment', 'price'],
+      ['#btn-cart', 'add_to_cart'],
+      ['.gallery, .main-image', 'product_image'],
+      ['#tab-specs', 'specs'],
+      ['#tab-reviews', 'reviews'],
+      ['.delivery-section', 'shipping'],
+      ['.info-section, .emo-guarantee-bar', 'guarantee'],
+      ['.similar-section', 'similar'],
+    ];
+    let activeHoverZone = null;
+    let hoverZoneStart = null;
+
+    function flushHoverZone() {
+      if (activeHoverZone && hoverZoneStart) {
+        const dur = (Date.now() - hoverZoneStart) / 1000;
+        signals.hover_targets[activeHoverZone] = parseFloat(((signals.hover_targets[activeHoverZone] || 0) + dur).toFixed(1));
+      }
+      activeHoverZone = null;
+      hoverZoneStart = null;
+    }
+
+    document.addEventListener('mouseover', (e) => {
+      let matched = null;
+      for (const [selector, zone] of hoverZones) {
+        if (e.target.closest(selector)) { matched = zone; break; }
+      }
+      if (matched !== activeHoverZone) {
+        flushHoverZone();
+        if (matched) {
+          activeHoverZone = matched;
+          hoverZoneStart = Date.now();
+        }
+      }
+    });
+
+    // ——— Scroll thrash ———
+    let lastScrollY = window.scrollY;
+    let scrollDirs = [];
+    window.addEventListener('scroll', () => {
+      const now = Date.now();
+      const dir = window.scrollY > lastScrollY ? 'd' : 'u';
+      scrollDirs.push({ dir, t: now });
+      while (scrollDirs.length > 0 && now - scrollDirs[0].t > 2000) scrollDirs.shift();
+      let changes = 0;
+      for (let i = 1; i < scrollDirs.length; i++)
+        if (scrollDirs[i].dir !== scrollDirs[i - 1].dir) changes++;
+      if (changes >= 4) {
+        signals.scroll_thrash = Math.min(10, signals.scroll_thrash + 0.2);
+        reclassify();
+      }
+      lastScrollY = window.scrollY;
+
+      // Review scroll detection
+      const reviewPanel = document.getElementById('tab-reviews');
+      if (reviewPanel.classList.contains('active')) {
+        const rect = reviewPanel.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+          signals.review_scroll = true;
+        }
+      }
+    }, { passive: true });
+
+    // ——— Dwell events (general) ———
+    let dwellTimer = null;
+    let dwellTarget = null;
+    document.addEventListener('mouseover', (e) => {
+      const tracked = e.target.closest('[data-emotion-track]');
+      if (tracked && tracked !== dwellTarget) {
+        dwellTarget = tracked;
+        clearTimeout(dwellTimer);
+        dwellTimer = setTimeout(() => {
+          const track = tracked.dataset.emotionTrack;
+          if (track === 'spec') signals.spec_dwell++;
+          else if (track === 'price') signals.price_hover++;
+          else signals.dwell_events++;
+          reclassify();
+        }, 2000);
+      }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      const tracked = e.target.closest('[data-emotion-track]');
+      if (tracked && tracked === dwellTarget) {
+        clearTimeout(dwellTimer);
+        dwellTarget = null;
+      }
+    });
+
+    // ——— Price hover (100px proximity) ———
+    const priceEl = document.getElementById('price-area');
+    let priceHoverTimer = null;
+    let inPriceZone = false;
+    let priceZoneStart = null;
+    document.addEventListener('mousemove', (e) => {
+      if (!priceEl) return;
+      const rect = priceEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+      if (dist <= 100) {
+        if (!priceHoverTimer) {
+          priceHoverTimer = setTimeout(() => {
+            signals.price_hover++;
+            reclassify();
+            priceHoverTimer = null;
+          }, 2000);
+        }
+        // NEW: accumulate time_on_price
+        if (!inPriceZone) {
+          inPriceZone = true;
+          priceZoneStart = Date.now();
+        }
+      } else {
+        clearTimeout(priceHoverTimer);
+        priceHoverTimer = null;
+        // NEW: flush time_on_price
+        if (inPriceZone && priceZoneStart) {
+          signals.time_on_price += (Date.now() - priceZoneStart) / 1000;
+          inPriceZone = false;
+          priceZoneStart = null;
+        }
+      }
+    });
+
+    // ——— Spec dwell: time in specs tab (seconds/10) ———
+    let specTabStart = null;
+    function trackSpecTab(isActive) {
+      if (isActive) {
+        specTabStart = Date.now();
+      } else if (specTabStart) {
+        const dur = (Date.now() - specTabStart) / 1000;
+        signals.spec_dwell += parseFloat((dur / 10).toFixed(1));
+        specTabStart = null;
+        reclassify();
+      }
+    }
+
+    // ——— Review tab: time tracking ———
+    let reviewTabStart = null;
+    function trackReviewTab(isActive) {
+      if (isActive) {
+        reviewTabStart = Date.now();
+      } else if (reviewTabStart) {
+        reviewTabStart = null;
+      }
+    }
+
+    // ——— Track if user performed any meaningful action ———
+    let hadMeaningfulAction = false;
+
+    // ——— Scroll depth tracking ———
+    let scrolledTo75 = false;
+    window.addEventListener('scroll', () => {
+      if (scrolledTo75) return;
+      const scrollPct = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
+      if (scrollPct >= 0.75) {
+        scrolledTo75 = true;
+        signals.product_views += 0.5;
+        reclassify();
+      }
+    }, { passive: true });
+
+    // ——— Scroll depth % + scroll speed (NEW) ———
+    let lastScrollTime = Date.now();
+    let lastScrollPos = window.scrollY;
+    window.addEventListener('scroll', () => {
+      const pct = Math.min(100, Math.round(
+        (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight * 100
+      ));
+      if (pct > signals.scroll_depth) signals.scroll_depth = pct;
+
+      const now = Date.now();
+      const dt = (now - lastScrollTime) / 1000;
+      if (dt > 0.05) {
+        const pxPerSec = Math.abs(window.scrollY - lastScrollPos) / dt;
+        signals.scroll_speed = pxPerSec > 1000 ? 'fast' : 'slow';
+      }
+      lastScrollTime = now;
+      lastScrollPos = window.scrollY;
+    }, { passive: true });
+
+    // ——————————————————————————————————————————
+    // UI INTERACTIONS → SIGNAL MAPPING
+    // ——————————————————————————————————————————
+
+    // Thumbnail gallery
+    const mainDisplay = document.getElementById('main-img-display');
+    const mainLabel = document.getElementById('main-img-label');
+    const thumbs = document.querySelectorAll('.thumb');
+
+    thumbs.forEach(th => {
+      th.addEventListener('click', () => {
+        thumbs.forEach(t => t.classList.remove('active'));
+        th.classList.add('active');
+        mainDisplay.src = th.dataset.src;
+        mainLabel.textContent = th.dataset.label;
+        signals.image_interactions++;
+        hadMeaningfulAction = true;
+      });
+    });
+
+    document.getElementById('thumb-left').addEventListener('click', () => {
+      signals.image_interactions++;
+      hadMeaningfulAction = true;
+    });
+    document.getElementById('thumb-right').addEventListener('click', () => {
+      signals.image_interactions++;
+      hadMeaningfulAction = true;
+    });
+
+    // Variant selector → cart_add_remove += 0.3 (comparison behavior)
+    document.getElementById('variant-options').addEventListener('click', (e) => {
+      const btn = e.target.closest('.variant-btn');
+      if (!btn) return;
+      document.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelector('.variant-label strong').textContent = btn.dataset.color;
+      signals.variant_clicks++;
+      signals.cart_add_remove += 0.3;
+      hadMeaningfulAction = true;
+      reclassify();
+    });
+
+    // Tabs
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const prevActive = document.querySelector('.tab-btn.active');
+        if (prevActive?.dataset.tab === 'specs') trackSpecTab(false);
+        if (prevActive?.dataset.tab === 'reviews') trackReviewTab(false);
+
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabPanels.forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        signals.tab_switches.push(btn.dataset.tab);
+        hadMeaningfulAction = true;
+
+        // Specificații tab → start spec_dwell timer
+        if (btn.dataset.tab === 'specs') trackSpecTab(true);
+
+        // Review tab → spec_dwell += 0.5, start review tracking
+        if (btn.dataset.tab === 'reviews') {
+          signals.spec_dwell += 0.5;
+          trackReviewTab(true);
+        }
+
+        reclassify();
+      });
+    });
+
+    // "Citește mai mult" → spec_dwell += 1
+    document.getElementById('desc-expand').addEventListener('click', function () {
+      const more = document.getElementById('desc-more');
+      const isShown = more.classList.toggle('show');
+      this.textContent = isShown ? 'Citește mai puțin ▲' : 'Citește mai mult ▼';
+      if (isShown) {
+        signals.spec_dwell += 1;
+        hadMeaningfulAction = true;
+        reclassify();
+      }
+    });
+
+    // Add to Cart → direct_checkout = true, cart_add_remove += 0.5
+    document.getElementById('btn-cart').addEventListener('click', () => {
+      signals.direct_checkout = true;
+      signals.cart_add_remove += 0.5;
+      hadMeaningfulAction = true;
+      // NEW: funnel stage + outcome detail
+      if (signals.funnel_stage === 'product_view') signals.funnel_stage = 'add_to_cart';
+      outcomeDetail.added_to_cart = true;
+      outcomeDetail.abandoned_at = signals.funnel_stage;
+      reclassify();
+    });
+
+    // Favorite → cart_add_remove += 1
+    document.getElementById('btn-fav').addEventListener('click', () => {
+      signals.cart_add_remove += 1;
+      hadMeaningfulAction = true;
+      reclassify();
+    });
+
+    // Similar product cards → product_views += 1
+    document.querySelectorAll('.similar-card').forEach(card => {
+      card.addEventListener('click', () => {
+        signals.product_views += 1;
+        hadMeaningfulAction = true;
+        reclassify();
+      });
+    });
+
+    // Compară link → product_views += 1
+    document.querySelectorAll('.buy-links a').forEach(link => {
+      if (link.textContent.includes('Compară')) {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          signals.product_views += 1;
+          hadMeaningfulAction = true;
+          reclassify();
+        });
+      }
+    });
+
+    // ——————————————————————————————————————————
+    // SURVEY
+    // ——————————————————————————————————————————
+    let surveyShown = false;
+    let surveyStars = 0;
+
+    function showSurvey() {
+      if (surveyShown) return;
+      surveyShown = true;
+      document.getElementById('survey-overlay').classList.add('visible');
+    }
+
+    function checkSurveyTrigger() {
+      if (signals.exit_intent >= 3) showSurvey();
+    }
+
+    // 60s timer
+    setTimeout(() => { if (!surveyShown) showSurvey(); }, 60000);
+
+    // Survey star selection
+    document.getElementById('survey-stars').addEventListener('click', (e) => {
+      const btn = e.target.closest('.survey-star');
+      if (!btn) return;
+      surveyStars = parseInt(btn.dataset.star);
+      document.querySelectorAll('.survey-star').forEach(s => {
+        s.classList.toggle('lit', parseInt(s.dataset.star) <= surveyStars);
+      });
+    });
+
+    // Survey close
+    document.getElementById('survey-close').addEventListener('click', () => {
+      document.getElementById('survey-overlay').classList.remove('visible');
+    });
+
+    // Survey submit
+    document.getElementById('survey-submit').addEventListener('click', () => {
+      const outcome = document.querySelector('input[name="outcome"]:checked')?.value || null;
+      // NEW: track form validation errors
+      if (surveyStars === 0 && !outcome) signals.form_errors++;
+      saveSession(outcome || 'survey_no_answer');
+
+      document.getElementById('survey-form').style.display = 'none';
+      document.getElementById('survey-thanks').style.display = 'block';
+
+      setTimeout(() => {
+        document.getElementById('survey-overlay').classList.remove('visible');
+      }, 2500);
+    });
+
+    // ——————————————————————————————————————————
+    // SESSION END (beforeunload)
+    // ——————————————————————————————————————————
+    function buildPayload(outcome) {
+      // Flush any active tab timers
+      const activeTab = document.querySelector('.tab-btn.active');
+      if (activeTab?.dataset.tab === 'specs') trackSpecTab(false);
+      if (activeTab?.dataset.tab === 'reviews') trackReviewTab(false);
+
+      // NEW: Flush hover zone tracking
+      flushHoverZone();
+      // NEW: Flush time_on_price
+      if (inPriceZone && priceZoneStart) {
+        signals.time_on_price += (Date.now() - priceZoneStart) / 1000;
+        inPriceZone = false;
+        priceZoneStart = null;
+      }
+
+      // Page exit without meaningful action → exit_intent += 2
+      if (!hadMeaningfulAction) {
+        signals.exit_intent += 2;
+      }
+
+      // Track cart abandon
+      if (signals.cart_add_remove > 0 && !signals.direct_checkout) {
+        localStorage.setItem('emo_abandons', signals.cart_abandons + 1);
+      }
+
+      // Final reclassify with all accumulated signals
+      reclassify();
+
+      const payload = {
+        session_id: SESSION_ID,
+        product_id: 'sony-wh1000xm5',
+        rage_clicks: Math.round(signals.rage_clicks),
+        mouse_jitter: parseFloat(signals.mouse_jitter.toFixed(2)),
+        exit_intent: Math.round(signals.exit_intent),
+        dwell_events: Math.round(signals.dwell_events),
+        scroll_thrash: parseFloat(signals.scroll_thrash.toFixed(2)),
+        dead_clicks: Math.round(signals.dead_clicks),
+        product_views: Math.round(signals.product_views),
+        spec_dwell: Math.round(signals.spec_dwell),
+        cart_add_remove: parseFloat(signals.cart_add_remove.toFixed(2)),
+        price_hover: Math.round(signals.price_hover),
+        direct_checkout: signals.direct_checkout,
+        total_visits: Math.round(signals.total_visits),
+        cart_abandons: Math.round(signals.cart_abandons),
+        hour: Math.round(signals.hour),
+        mobile: signals.mobile,
+        outcome: outcome,
+        time_on_page_sec: Math.round((Date.now() - PAGE_START) / 1000),
+        classified_state: smoothed.state,
+        classified_action: engine.getState()?.action || 'default',
+        confidence: parseFloat(smoothed.confidence.toFixed(3)),
+        user_agent: navigator.userAgent,
+        screen_width: window.innerWidth,
+        // NEW: Extended metrics (v2)
+        click_targets: signals.click_targets,
+        hover_targets: signals.hover_targets,
+        funnel_stage: signals.funnel_stage,
+        dropoff_stage: signals.funnel_stage,
+        scroll_depth: signals.scroll_depth,
+        scroll_speed: signals.scroll_speed,
+        time_on_price: parseFloat(signals.time_on_price.toFixed(1)),
+        form_errors: signals.form_errors,
+        user_type: userType,
+        traffic_source: trafficSource,
+        outcome_detail: { ...outcomeDetail, abandoned_at: signals.funnel_stage },
+      };
+      console.log('[Adaptive State UI] Session payload:', JSON.stringify(payload, null, 2));
+      return payload;
+    }
+
+    let sessionSaved = false;
+
+    function saveSession(outcome) {
+      if (sessionSaved) return;
+      sessionSaved = true;
+      const payload = buildPayload(outcome);
+      fetch(`${SB_URL}/rest/v1/sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).then(r => {
+        if (!r.ok) r.text().then(t => console.error('[Adaptive State UI] Supabase error:', r.status, t));
+        else console.log('[Adaptive State UI] Session saved OK');
+      }).catch(e => console.error('[Adaptive State UI] Fetch error:', e));
+    }
+
+    window.addEventListener('beforeunload', () => saveSession('left'));
+
+    // ——————————————————————————————————————————
+    // ADAPTIVE UI ENGINE (runs every 2s)
+    // ——————————————————————————————————————————
+    const EMO_STATES = {
+      FRUSTRATED: {
+        test: (s) => s.rage_clicks >= 4 || (s.mouse_jitter >= 5 && s.scroll_thrash >= 3),
+        bodyClass: 'emo-frustrated',
+        ctaText: 'Continuă liniștit →',
+        label: 'Mod Calm activat',
+        desc: 'Am detectat semne de frustrare — interfața a fost simplificată pentru confortul tău.',
+      },
+      HESITANT: {
+        test: (s) => s.exit_intent >= 2 && (s.cart_add_remove >= 1 || s.price_hover >= 2),
+        bodyClass: 'emo-hesitant',
+        ctaText: 'Încearcă — 30 zile retur',
+        label: 'Garanții evidențiate',
+        desc: 'Observăm că eziti — ți-am evidențiat politica de retur și garanțiile incluse.',
+      },
+      DECIDED: {
+        test: (s) => s.direct_checkout === true,
+        bodyClass: 'emo-decided',
+        ctaText: '✓ Cumpără acum',
+        label: 'Mod Rapid activat',
+        desc: 'Ai decis — am simplificat pagina pentru finalizare rapidă.',
+      },
+      PRICE_SENSITIVE: {
+        test: (s) => s.price_hover >= 2 && s.cart_add_remove >= 2,
+        bodyClass: 'emo-price-sensitive',
+        ctaText: '🔔 Alertă reducere',
+        label: 'Istoric preț afișat',
+        desc: 'Am observat interes pentru preț — ți-am arătat istoricul și opțiunile de economisire.',
+      },
+      RESEARCHING: {
+        test: (s) => s.spec_dwell >= 3 || s.product_views >= 4,
+        bodyClass: 'emo-researching',
+        ctaText: 'Adaugă în Coș',
+        label: 'Mod Cercetare',
+        desc: 'Analizezi detaliile — ți-am evidențiat specificațiile tehnice și comparațiile.',
+      },
+      CONFUSED: {
+        test: (s) => s.dwell_events >= 5 || s.dead_clicks >= 3,
+        bodyClass: 'emo-confused',
+        ctaText: '🛒 Adaugă în Coș',
+        label: 'Ghidare activată',
+        desc: 'Pagina pare complexă — am evidențiat acțiunea principală pentru tine.',
+      },
+    };
+
+    const ALL_EMO_CLASSES = Object.values(EMO_STATES).map(s => s.bodyClass);
+    let currentEmoState = null;
+    let emoLocked = false;       // user clicked "Păstrează"
+    let emoForcedOff = false;    // user clicked "Standard"
+    const defaultCtaText = document.getElementById('btn-cart').textContent;
+
+    function applyAdaptiveUI() {
+      if (emoForcedOff) return;
+
+      let detected = null;
+
+      // Priority order: FRUSTRATED > DECIDED > PRICE_SENSITIVE > HESITANT > CONFUSED > RESEARCHING
+      const priority = ['FRUSTRATED', 'DECIDED', 'PRICE_SENSITIVE', 'HESITANT', 'CONFUSED', 'RESEARCHING'];
+      for (const key of priority) {
+        if (EMO_STATES[key].test(signals)) {
+          detected = key;
+          break;
+        }
+      }
+
+      // If locked to a state, keep it unless signals completely gone
+      if (emoLocked && currentEmoState && detected !== currentEmoState) {
+        if (EMO_STATES[currentEmoState].test(signals)) {
+          detected = currentEmoState;
+        } else {
+          emoLocked = false;
+        }
+      }
+
+      if (detected === currentEmoState) return;
+
+      // Remove old classes
+      ALL_EMO_CLASSES.forEach(c => document.body.classList.remove(c));
+
+      if (detected) {
+        const state = EMO_STATES[detected];
+        document.body.classList.add(state.bodyClass);
+        document.getElementById('btn-cart').textContent = state.ctaText;
+
+        // RESEARCHING: auto-switch to specs tab
+        if (detected === 'RESEARCHING') {
+          const specsBtn = document.querySelector('.tab-btn[data-tab="specs"]');
+          if (specsBtn && !specsBtn.classList.contains('active')) {
+            specsBtn.click();
+          }
+        }
+
+        // Show UR widget
+        document.getElementById('emo-ur-label').textContent = state.label;
+        document.getElementById('emo-ur-desc').textContent = state.desc;
+        document.getElementById('emo-ur').classList.add('visible');
+      } else {
+        document.getElementById('btn-cart').textContent = defaultCtaText;
+        document.getElementById('emo-ur').classList.remove('visible');
+      }
+
+      currentEmoState = detected;
+    }
+
+    // Run every 2 seconds
+    setInterval(applyAdaptiveUI, 2000);
+
+    // ——— UR Widget buttons ———
+    document.getElementById('emo-ur-keep').addEventListener('click', () => {
+      emoLocked = true;
+      document.getElementById('emo-ur').classList.remove('visible');
+    });
+
+    document.getElementById('emo-ur-standard').addEventListener('click', () => {
+      emoForcedOff = true;
+      emoLocked = false;
+      currentEmoState = null;
+      ALL_EMO_CLASSES.forEach(c => document.body.classList.remove(c));
+      document.getElementById('btn-cart').textContent = defaultCtaText;
+      document.getElementById('emo-ur').classList.remove('visible');
+    });
+
+    document.getElementById('emo-ur-reset').addEventListener('click', () => {
+      // Reset all signals to zero
+      signals.rage_clicks = 0;
+      signals.mouse_jitter = 0;
+      signals.exit_intent = 0;
+      signals.dwell_events = 0;
+      signals.scroll_thrash = 0;
+      signals.dead_clicks = 0;
+      signals.product_views = 1;
+      signals.spec_dwell = 0;
+      signals.cart_add_remove = 0;
+      signals.price_hover = 0;
+      signals.direct_checkout = false;
+      signals.image_interactions = 0;
+      signals.variant_clicks = 0;
+      signals.review_scroll = false;
+      // NEW: reset v2 metrics
+      signals.click_targets = {};
+      signals.hover_targets = {};
+      signals.funnel_stage = 'product_view';
+      signals.scroll_depth = 0;
+      signals.scroll_speed = 'slow';
+      signals.time_on_price = 0;
+      signals.form_errors = 0;
+      outcomeDetail.added_to_cart = false;
+      outcomeDetail.checkout_started = false;
+      outcomeDetail.purchase_completed = false;
+      outcomeDetail.abandoned_at = 'product_view';
+      hadMeaningfulAction = false;
+      scrolledTo75 = false;
+
+      emoForcedOff = false;
+      emoLocked = false;
+      currentEmoState = null;
+      ALL_EMO_CLASSES.forEach(c => document.body.classList.remove(c));
+      document.getElementById('btn-cart').textContent = defaultCtaText;
+      document.getElementById('emo-ur').classList.remove('visible');
+      reclassify();
+    });
+
+    // ——————————————————————————————————————————
+    // BIOMETRIC INPUTS REMOVED IN EU-SAFE MODE
+    // ——————————————————————————————————————————
+    document.getElementById('ble-status').textContent = 'Biometric inputs disabled in EU-safe mode';
+
+  </script>
+</body>
+</html>

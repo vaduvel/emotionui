@@ -1,0 +1,23 @@
+{
+  "name": "emotionui-sdk",
+  "version": "0.1.0",
+  "description": "Emotion-aware UI adaptation SDK for e-commerce",
+  "type": "module",
+  "main": "dist/emotionui.js",
+  "module": "dist/emotionui.js",
+  "exports": {
+    ".": {
+      "import": "./dist/emotionui.js",
+      "require": "./dist/emotionui.umd.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

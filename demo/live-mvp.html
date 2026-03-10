@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adaptive State Live MVP - Apple Mac mini</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --emo-bg: #ffffff;
+      --emo-bg-secondary: #f8f9fa;
+      --emo-text: #1a1a2e;
+      --emo-text-secondary: #6c757d;
+      --emo-accent: #4361ee;
+      --emo-accent-hover: #3a56d4;
+      --emo-border: #dee2e6;
+      --emo-radius: 8px;
+      --emo-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      --emo-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+      --emo-spacing: 1rem;
+      --emo-spacing-lg: 2rem;
+      --emo-font-size: 1rem;
+      --emo-font-size-lg: 1.25rem;
+      --emo-line-height: 1.6;
+      --emo-transition: 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+      --emo-cta-bg: #4361ee;
+      --emo-cta-text: #ffffff;
+      --emo-cta-size: 1rem;
+      --emo-cta-padding: 0.75rem 2rem;
+      --emo-cta-radius: 8px;
+      --emo-cta-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+      --emo-panel-opacity: 1;
+      --emo-layout-gap: 2rem;
+      --emo-highlight: transparent;
+      --emo-banner-bg: transparent;
+      --emo-banner-text: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #edf1f6;
+      color: var(--emo-text);
+      line-height: var(--emo-line-height);
+      font-size: var(--emo-font-size);
+      transition: background var(--emo-transition), color var(--emo-transition);
+    }
+
+    .demo-layout {
+      display: grid;
+      grid-template-columns: 280px minmax(720px, 1fr) 320px;
+      min-height: 100vh;
+      max-width: 1700px;
+      margin: 0 auto;
+    }
+
+    .signal-panel {
+      background: #101828;
+      color: #e2e8f0;
+      padding: 20px;
+      overflow-y: auto;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+    }
+
+    .signal-panel h2,
+    .inspector-panel h2 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #8b9bb4;
+      margin-bottom: 14px;
+    }
+
+    .signal-group {
+      margin-bottom: 20px;
+    }
+
+    .signal-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 0;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    .signal-name { color: #cbd5e1; }
+    .signal-value {
+      font-weight: 700;
+      color: #f8fafc;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .scenarios { margin-top: 16px; }
+
+    .scenario-btn,
+    .reset-btn,
+    .action-btn {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #16213e;
+      color: #e2e8f0;
+      cursor: pointer;
+      font-size: 12px;
+      text-align: left;
+      transition: all 0.15s;
+    }
+
+    .scenario-btn:hover,
+    .reset-btn:hover,
+    .action-btn:hover {
+      background: #1e3a5f;
+      border-color: #4361ee;
+    }
+
+    .reset-btn {
+      margin-top: 14px;
+      background: #7f1d1d;
+      border-color: #991b1b;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .action-btn {
+      background: #0f172a;
+      border-color: #334155;
+      color: #f8fafc;
+      font-weight: 700;
+    }
+
+    .action-btn.primary {
+      background: #1d4ed8;
+      border-color: #2563eb;
+    }
+
+    .action-btn.primary:hover {
+      background: #1e40af;
+      border-color: #1d4ed8;
+    }
+
+    .action-status {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #93a4bf;
+      min-height: 16px;
+    }
+
+    .product-container {
+      background: var(--emo-bg);
+      padding: 32px;
+      transition: all var(--emo-transition);
+      min-height: 100vh;
+    }
+
+    #product-page {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: grid;
+      gap: 24px;
+    }
+
+    .commerce-utility-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 18px;
+      border-radius: 18px;
+      border: 1px solid #dbe4f0;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.06);
+      backdrop-filter: blur(14px);
+    }
+
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .breadcrumbs span:not(:last-child)::after {
+      content: "›";
+      margin-left: 8px;
+      color: #94a3b8;
+    }
+
+    .merchant-strip {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: #475569;
+    }
+
+    .merchant-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid #dbe4f0;
+      font-weight: 700;
+    }
+
+    .commerce-signal-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .commerce-chip {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      border: 1px solid #dbe4f0;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+      color: #334155;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .commerce-chip small {
+      display: block;
+      margin-bottom: 4px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .product-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(340px, 0.95fr);
+      gap: 28px;
+      align-items: start;
+    }
+
+    .product-main,
+    .purchase-card,
+    .product-section,
+    .product-related,
+    .product-secondary-info,
+    .product-upsells,
+    .product-reviews-teaser {
+      background: var(--emo-bg-secondary);
+      border: 1px solid var(--emo-border);
+      border-radius: var(--emo-radius);
+      box-shadow: var(--emo-shadow);
+      transition: all var(--emo-transition);
+    }
+
+    .product-main {
+      padding: 22px;
+    }
+
+    .product-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      color: var(--emo-text-secondary);
+      font-size: 13px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #ebf4ff;
+      color: #1d4ed8;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .product-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--emo-text);
+      margin-bottom: 8px;
+    }
+
+    .product-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .rating-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    .rating-stars {
+      color: #f59e0b;
+      letter-spacing: 0.08em;
+      font-size: 14px;
+    }
+
+    .meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .product-subtitle {
+      font-size: 15px;
+      color: var(--emo-text-secondary);
+      margin-bottom: 18px;
+    }
+
+    .product-gallery {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid var(--emo-border);
+      padding: 24px;
+      margin-bottom: 18px;
+    }
+
+    .product-image-placeholder {
+      height: 280px;
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 30% 35%, rgba(255,255,255,0.7), transparent 25%),
+        linear-gradient(145deg, #f9fbff 0%, #dde6f0 100%);
+      display: grid;
+      place-items: center;
+      font-size: 132px;
+      color: rgba(31, 41, 55, 0.35);
+      margin-bottom: 16px;
+    }
+
+    .thumb-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .thumb {
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+      border: 1px solid var(--emo-border);
+      background: #f8fafc;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      color: #64748b;
+      cursor: pointer;
+      transition: transform var(--emo-transition), border-color var(--emo-transition), box-shadow var(--emo-transition), color var(--emo-transition);
+    }
+
+    button.thumb {
+      appearance: none;
+      padding: 0;
+    }
+
+    .thumb:hover,
+    .thumb.is-active {
+      border-color: var(--emo-accent);
+      color: var(--emo-accent);
+      box-shadow: inset 0 0 0 1px var(--emo-accent);
+      transform: translateY(-1px);
+    }
+
+    .variant-block {
+      display: grid;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .hero-benefits {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0 22px;
+    }
+
+    .hero-benefit {
+      padding: 14px;
+      border-radius: 16px;
+      background: #fff;
+      border: 1px solid var(--emo-border);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .hero-benefit strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--emo-text);
+      font-size: 14px;
+    }
+
+    .hero-benefit span {
+      color: var(--emo-text-secondary);
+      font-size: 12px;
+    }
+
+    .variant-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .variant-label {
+      min-width: 96px;
+      color: var(--emo-text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .variant-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--emo-border);
+      background: #fff;
+      color: var(--emo-text);
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    .variant-chip:hover,
+    .variant-chip.is-active {
+      border-color: var(--emo-accent);
+      color: var(--emo-accent);
+      box-shadow: inset 0 0 0 1px var(--emo-accent);
+    }
+
+    .purchase-card {
+      padding: 22px;
+      position: sticky;
+      top: 32px;
+    }
+
+    .offer-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      color: #475569;
+    }
+
+    .offer-store {
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .offer-store small {
+      color: #64748b;
+      font-weight: 700;
+      margin-left: 6px;
+    }
+
+    .product-price {
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--emo-border);
+      margin-bottom: 18px;
+      transition: all var(--emo-transition);
+    }
+
+    .price-caption {
+      font-size: 12px;
+      color: var(--emo-text-secondary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .price-current {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--emo-text);
+      transition: color var(--emo-transition);
+    }
+
+    .price-old {
+      display: inline-block;
+      margin-left: 10px;
+      text-decoration: line-through;
+      color: var(--emo-text-secondary);
+      font-size: 1rem;
+    }
+
+    .price-support {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--emo-text-secondary);
+    }
+
+    .support-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .product-cta {
+      display: grid;
+      gap: 12px;
+      margin: 20px 0;
+      transition: all var(--emo-transition);
+    }
+
+    .purchase-meta-stack {
+      display: grid;
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .purchase-meta-card {
+      padding: 14px;
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid var(--emo-border);
+    }
+
+    .purchase-meta-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--emo-text);
+      font-size: 14px;
+    }
+
+    .purchase-meta-card p,
+    .purchase-meta-card li {
+      color: var(--emo-text-secondary);
+      font-size: 13px;
+    }
+
+    .purchase-meta-card ul {
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: var(--emo-cta-padding);
+      border-radius: var(--emo-cta-radius);
+      border: none;
+      background: var(--emo-cta-bg);
+      color: var(--emo-cta-text);
+      box-shadow: var(--emo-cta-shadow);
+      cursor: pointer;
+      font-size: var(--emo-cta-size);
+      font-weight: 700;
+      transition: all var(--emo-transition);
+      font-family: inherit;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+    }
+
+    .cta-button.secondary {
+      background: #fff;
+      color: var(--emo-text);
+      border: 1px solid var(--emo-border);
+      box-shadow: none;
+    }
+
+    .cta-button.ghost {
+      background: #f8fafc;
+      color: #0f172a;
+      border: 1px solid var(--emo-border);
+      box-shadow: none;
+    }
+
+    .product-social-proof,
+    .product-price-history,
+    .product-express-checkout {
+      display: block;
+      font-size: 13px;
+      color: var(--emo-text-secondary);
+      padding: 12px;
+      background: #fff;
+      border-radius: 12px;
+      border: 1px dashed var(--emo-border);
+    }
+
+    .section-shortcuts {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .shortcut-btn {
+      border: 1px solid var(--emo-border);
+      background: #fff;
+      color: var(--emo-text-secondary);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+
+    .shortcut-btn:hover,
+    .shortcut-btn.is-active {
+      border-color: var(--emo-accent);
+      color: var(--emo-accent);
+      box-shadow: inset 0 0 0 1px var(--emo-accent);
+    }
+
+    .product-section,
+    .product-related,
+    .product-secondary-info,
+    .product-upsells,
+    .product-reviews-teaser {
+      padding: 20px 22px;
+    }
+
+    .surface-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .surface-header div:last-child {
+      max-width: 520px;
+    }
+
+    .surface-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .product-section h3,
+    .product-related h3,
+    .product-secondary-info h3,
+    .product-upsells h3,
+    .product-reviews-teaser h3 {
+      font-size: 1.15rem;
+      margin-bottom: 14px;
+      color: var(--emo-text);
+    }
+
+    .product-section p,
+    .product-related p,
+    .product-secondary-info p,
+    .product-upsells p,
+    .product-reviews-teaser p,
+    .product-reviews-teaser li {
+      color: var(--emo-text-secondary);
+      font-size: 14px;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .feature-list li {
+      padding: 12px 14px;
+      background: #fff;
+      border: 1px solid var(--emo-border);
+      border-radius: 12px;
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .spec-item {
+      padding: 14px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid var(--emo-border);
+      transition: all var(--emo-transition);
+    }
+
+    .spec-label {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--emo-text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .spec-value {
+      color: var(--emo-text);
+      font-weight: 700;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .comparison-card {
+      padding: 14px;
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid var(--emo-border);
+    }
+
+    .comparison-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--emo-text);
+    }
+
+    .comparison-card span {
+      display: inline-flex;
+      margin-top: 10px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #4338ca;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .reviews-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .review-card {
+      padding: 14px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid var(--emo-border);
+    }
+
+    .review-card strong {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      color: var(--emo-text);
+    }
+
+    .review-card small {
+      color: var(--emo-text-secondary);
+      font-weight: 600;
+    }
+
+    .product-upsells,
+    .product-social-proof,
+    .product-price-history,
+    .product-full-specs,
+    .product-express-checkout,
+    .product-related,
+    .product-secondary-info,
+    .product-urgency {
+      transition: all var(--emo-transition);
+    }
+
+    .product-urgency {
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    [data-adaptive-zone] {
+      position: relative;
+      --zone-accent: var(--emo-accent);
+      --zone-accent-hover: var(--emo-accent-hover);
+      --zone-bg-secondary: var(--emo-bg-secondary);
+      --zone-border-strong: rgba(67, 97, 238, 0.18);
+      --zone-soft-fill: rgba(240, 244, 255, 0.95);
+      --zone-soft-badge: rgba(67, 97, 238, 0.12);
+      --zone-chip-border: rgba(67, 97, 238, 0.18);
+      --zone-shadow: var(--emo-shadow-lg);
+      transition:
+        transform var(--emo-transition),
+        box-shadow var(--emo-transition),
+        border-color var(--emo-transition),
+        background var(--emo-transition),
+        opacity var(--emo-transition);
+    }
+
+    [data-adaptive-zone].is-emphasized {
+      transform: translateY(-2px);
+      border-color: var(--zone-accent);
+      outline: 2px solid var(--zone-accent);
+      outline-offset: -1px;
+      box-shadow: var(--zone-shadow);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, var(--zone-bg-secondary) 100%);
+    }
+
+    [data-adaptive-zone].has-local-adaptation:not(.is-emphasized) {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.96) 100%);
+    }
+
+    [data-adaptive-zone].is-muted {
+      opacity: 0.62;
+    }
+
+    .adaptive-slot {
+      display: none;
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid var(--zone-border-strong);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, var(--zone-soft-fill) 100%);
+      box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+    }
+
+    .adaptive-slot.is-visible {
+      display: block;
+    }
+
+    .adaptive-slot-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .adaptive-slot-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--zone-soft-badge);
+      color: var(--zone-accent);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .adaptive-slot-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--emo-text);
+      margin-bottom: 6px;
+    }
+
+    .adaptive-slot-copy {
+      color: var(--emo-text-secondary);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .adaptive-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .adaptive-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--zone-chip-border);
+      color: #334155;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .adaptive-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #475569;
+    }
+
+    .supporting-sections {
+      display: grid;
+      gap: 24px;
+    }
+
+    .research-surface {
+      display: grid;
+      gap: 24px;
+      padding: 22px;
+      border-radius: 20px;
+      border: 1px solid var(--emo-border);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+      box-shadow: var(--emo-shadow);
+      margin-top: 24px;
+    }
+
+    .research-cluster-header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .research-cluster-header p {
+      margin: 0;
+      color: var(--emo-text-secondary);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .noise-cluster {
+      transition: opacity var(--emo-transition), filter var(--emo-transition);
+    }
+
+    body.emo-oxygen .noise-cluster,
+    body.emo-spotlight .noise-cluster {
+      opacity: 0.38;
+      filter: saturate(0.7);
+    }
+
+    #ur-widget {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      width: min(360px, calc(100vw - 32px));
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.94);
+      color: #e2e8f0;
+      box-shadow: 0 24px 48px rgba(15, 23, 42, 0.3);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      display: none;
+      z-index: 40;
+    }
+
+    #ur-widget.is-visible {
+      display: block;
+    }
+
+    .ur-kicker {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #93c5fd;
+      margin-bottom: 8px;
+    }
+
+    .ur-label {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .ur-desc {
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+
+    .ur-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .ur-actions button {
+      flex: 1;
+      border: 1px solid rgba(148, 163, 184, 0.26);
+      background: rgba(30, 41, 59, 0.88);
+      color: #f8fafc;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .ur-actions button:hover {
+      border-color: #60a5fa;
+    }
+
+    .inspector-panel {
+      background: #fafbfc;
+      border-left: 1px solid #e5e7eb;
+      padding: 20px;
+      overflow-y: auto;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      font-size: 13px;
+    }
+
+    .inspector-state {
+      padding: 16px;
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 16px;
+    }
+
+    .inspector-state-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .inspector-state-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--emo-accent, #4361ee);
+    }
+
+    .inspector-state-desc {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .inspector-confidence { margin-top: 12px; }
+
+    .confidence-bar {
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      background: var(--emo-accent, #4361ee);
+      transition: width var(--emo-transition);
+    }
+
+    .inspector-matches,
+    .inspector-thresholds,
+    .inspector-rules,
+    .inspector-json {
+      margin-top: 16px;
+    }
+
+    .threshold-summary {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .threshold-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      font-size: 11px;
+    }
+
+    .threshold-pill strong {
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 10px;
+    }
+
+    .threshold-pill span {
+      color: #111827;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .threshold-grid,
+    .threshold-bool-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .threshold-metric,
+    .threshold-bool {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      font-size: 11px;
+    }
+
+    .threshold-metric span,
+    .threshold-bool span {
+      display: block;
+      color: #6b7280;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 10px;
+    }
+
+    .threshold-metric strong,
+    .threshold-bool strong {
+      color: #111827;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .threshold-bool.is-true {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+
+    .threshold-bool.is-true strong {
+      color: #1d4ed8;
+    }
+
+    .threshold-bool.is-false {
+      opacity: 0.82;
+    }
+
+    .match-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 12px;
+    }
+
+    .match-rule { color: #374151; font-weight: 500; }
+    .match-weight { color: #9ca3af; font-variant-numeric: tabular-nums; }
+
+    .rule-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .rule-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .rule-id { font-weight: 600; font-size: 11px; color: #6b7280; }
+
+    .rule-status {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 700;
+    }
+
+    .rule-active {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .rule-inactive {
+      background: #f3f4f6;
+      color: #9ca3af;
+    }
+
+    .rule-state {
+      font-size: 12px;
+      color: #374151;
+      margin-top: 2px;
+    }
+
+    .inspector-json pre {
+      background: #111827;
+      color: #c7d2fe;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 11px;
+      overflow-x: auto;
+      line-height: 1.5;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    body.emo-editorial .inspector-panel {
+      background: #0f172a;
+      border-left-color: #1e293b;
+      color: #e2e8f0;
+    }
+
+    body.emo-editorial .inspector-state {
+      background: #1e293b;
+      border-color: #334155;
+    }
+
+    body.emo-editorial .inspector-state-label { color: #64748b; }
+    body.emo-editorial .inspector-state-desc { color: #94a3af; }
+    body.emo-editorial .match-item,
+    body.emo-editorial .rule-item { border-color: #1e293b; }
+    body.emo-editorial .match-rule,
+    body.emo-editorial .rule-state { color: #e2e8f0; }
+    body.emo-editorial .rule-id,
+    body.emo-editorial .inspector-panel h2 { color: #94a3b8; }
+    body.emo-editorial .threshold-pill,
+    body.emo-editorial .threshold-metric,
+    body.emo-editorial .threshold-bool {
+      background: #111827;
+      border-color: #1f2937;
+    }
+    body.emo-editorial .threshold-pill strong,
+    body.emo-editorial .threshold-metric span,
+    body.emo-editorial .threshold-bool span {
+      color: #94a3b8;
+    }
+    body.emo-editorial .threshold-pill span,
+    body.emo-editorial .threshold-metric strong,
+    body.emo-editorial .threshold-bool strong {
+      color: #e5e7eb;
+    }
+    body.emo-editorial .threshold-bool.is-true {
+      border-color: #1d4ed8;
+      background: rgba(29, 78, 216, 0.14);
+    }
+
+    @media (max-width: 1480px) {
+      .demo-layout {
+        grid-template-columns: 260px minmax(0, 1fr) 300px;
+      }
+      .product-shell {
+        grid-template-columns: 1fr;
+      }
+      .purchase-card {
+        position: static;
+      }
+      .commerce-utility-bar,
+      .product-meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .commerce-signal-strip,
+      .hero-benefits {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 980px) {
+      .demo-layout {
+        grid-template-columns: 1fr;
+      }
+      .signal-panel,
+      .inspector-panel {
+        position: static;
+        height: auto;
+      }
+      .product-container {
+        padding: 20px;
+      }
+      .commerce-signal-strip,
+      .hero-benefits,
+      .spec-grid,
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+      #ur-widget {
+        right: 16px;
+        bottom: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-layout">
+    <aside class="signal-panel" id="emotionui-live-panel">
+      <h2>Live Signals</h2>
+      <div class="signal-group" id="signal-controls"></div>
+
+      <div class="scenarios">
+        <h2>Quick Scenarios</h2>
+        <button class="scenario-btn" data-scenario="frustrated">Frustrated User</button>
+        <button class="scenario-btn" data-scenario="price-sensitive">Price Sensitive</button>
+        <button class="scenario-btn" data-scenario="hesitant">Hesitant Buyer</button>
+        <button class="scenario-btn" data-scenario="researcher">Deep Researcher</button>
+        <button class="scenario-btn" data-scenario="confused">Confused User</button>
+        <button class="scenario-btn" data-scenario="express">Decision Ready</button>
+        <button class="scenario-btn" data-scenario="night">Evening Browse</button>
+        <button class="scenario-btn" data-scenario="neutral">Reset To Neutral</button>
+      </div>
+
+      <button class="reset-btn" id="reset-all">Reset All Signals</button>
+      <button class="action-btn" id="export-session">Export Session JSON</button>
+      <button class="action-btn" id="export-timeline">Export Timeline JSON</button>
+      <button class="action-btn primary" id="send-supabase">Send Session to Supabase</button>
+      <div class="action-status" id="action-status">Idle</div>
+    </aside>
+
+    <main class="product-container">
+      <div id="product-page">
+        <section class="commerce-utility-bar">
+          <div class="breadcrumbs">
+            <span>Desktop PC</span>
+            <span>Apple</span>
+            <span>Mac mini</span>
+            <span>M4 16GB 512GB</span>
+          </div>
+          <div class="merchant-strip">
+            <span class="merchant-chip">Vandut de eMotion Store</span>
+            <span class="merchant-chip">4.9 / 5 seller score</span>
+            <span class="merchant-chip">Ridicare maine</span>
+          </div>
+        </section>
+
+        <section class="commerce-signal-strip">
+          <div class="commerce-chip"><small>Livrare</small>Genius Box si showroom pickup din stoc local.</div>
+          <div class="commerce-chip"><small>Retur</small>30 zile retur si verificare colet la livrare.</div>
+          <div class="commerce-chip"><small>Finantare</small>Rate fixe fara drum separat la banca.</div>
+          <div class="commerce-chip"><small>Marketplace trust</small>Factura, garantie si suport post-achizitie.</div>
+        </section>
+
+        <section class="product-shell">
+          <div class="product-main" data-adaptive-zone="overview">
+            <div class="product-kicker">
+              <span class="pill">Live MVP</span>
+              <span>Commerce surface for intent-aware UI tuning</span>
+            </div>
+            <div class="product-meta-row">
+              <div class="rating-row">
+                <span class="rating-stars">★★★★★</span>
+                <strong>4.78</strong>
+                <span>1.248 review-uri verificate</span>
+                <span class="meta-badge">Top in Mini PC</span>
+              </div>
+              <div class="rating-row">
+                <span>Cod produs: MM4-16-512</span>
+                <span>Comparat de 312 ori azi</span>
+              </div>
+            </div>
+            <h1 class="product-title">Apple Mac mini M4, 16GB unified memory, 512GB SSD</h1>
+            <p class="product-subtitle">Compact desktop configuration with delivery, financing, seller trust, dense review/spec zones, and enough commerce noise to validate local adaptive interventions on a product page that feels closer to a real retailer.</p>
+
+            <div class="product-gallery">
+              <div class="product-image-placeholder" id="gallery-preview">🖥️</div>
+              <div class="thumb-row">
+                <button class="thumb is-active" type="button" data-gallery-frame="🖥️">📦</button>
+                <button class="thumb" type="button" data-gallery-frame="🔌">🔌</button>
+                <button class="thumb" type="button" data-gallery-frame="🧠">🧠</button>
+                <button class="thumb" type="button" data-gallery-frame="⚙️">⚙️</button>
+                <button class="thumb" type="button" data-gallery-frame="⭐">⭐</button>
+              </div>
+            </div>
+
+            <div class="hero-benefits">
+              <div class="hero-benefit">
+                <strong>Apple reseller</strong>
+                <span>Factura, garantie si configuratie sigilata pentru retail local.</span>
+              </div>
+              <div class="hero-benefit">
+                <strong>Setup gata rapid</strong>
+                <span>Perfect pentru birou, coding station si taskuri creative usoare.</span>
+              </div>
+              <div class="hero-benefit">
+                <strong>Zona buna de comparatie</strong>
+                <span>Storage, memorie, porturi si thermals genereaza intentie reala de research.</span>
+              </div>
+            </div>
+
+            <div class="variant-block" data-adaptive-zone="variants">
+              <div class="variant-row">
+                <span class="variant-label">Storage</span>
+                <button class="variant-chip is-active" type="button">256 GB</button>
+                <button class="variant-chip" type="button">512 GB</button>
+                <button class="variant-chip" type="button">1 TB</button>
+                <button class="variant-chip" type="button">2 TB</button>
+              </div>
+              <div class="variant-row">
+                <span class="variant-label">Memory</span>
+                <button class="variant-chip is-active" type="button">16 GB</button>
+                <button class="variant-chip" type="button">24 GB</button>
+                <button class="variant-chip" type="button">32 GB</button>
+              </div>
+              <div class="adaptive-slot" data-adaptive-slot="variants"></div>
+            </div>
+
+            <div class="adaptive-slot" data-adaptive-slot="overview"></div>
+          </div>
+
+          <aside class="purchase-card" data-adaptive-zone="purchase">
+            <div class="offer-summary">
+              <div class="offer-store">eMotion Store <small>Apple specialist</small></div>
+              <div>stoc in 3 locatii</div>
+            </div>
+            <div class="product-price">
+              <div class="price-caption">Primary price</div>
+              <div>
+                <span class="price-current">3.199,99 lei</span>
+                <span class="price-old">3.599,99 lei</span>
+              </div>
+              <div class="price-support">
+                <div class="support-row"><span>12 month financing</span><strong>283 lei / luna</strong></div>
+                <div class="support-row"><span>Free return</span><strong>30 days</strong></div>
+                <div class="support-row"><span>Pickup tomorrow</span><strong>in stock</strong></div>
+              </div>
+            </div>
+
+            <div class="product-urgency">Limited Friday stock. Financing and pickup are available now.</div>
+
+            <div class="product-cta">
+              <button class="cta-button" id="add-to-cart" type="button">Add to cart</button>
+              <button class="cta-button secondary" id="favorite-toggle" type="button">Add to favorites</button>
+              <button class="cta-button ghost" id="buy-now" type="button">Buy now</button>
+            </div>
+
+            <div class="purchase-meta-stack">
+              <div class="purchase-meta-card">
+                <strong>Livrare si ridicare</strong>
+                <ul>
+                  <li>Livrare maine in Bucuresti si Ilfov</li>
+                  <li>Ridicare showroom in 2 ore daca rezervi online</li>
+                  <li>Verificare colet si retur simplificat</li>
+                </ul>
+              </div>
+              <div class="purchase-meta-card">
+                <strong>Protejare decizie</strong>
+                <p>Rate fixe 12 luni, retur 30 zile, suport pre si post-cumparare fara schimbarea ofertei.</p>
+              </div>
+            </div>
+
+            <div class="product-social-proof">Picked by returning users who compare specs before checkout.</div>
+            <div class="product-price-history">Price dropped 400 lei in the last 60 days.</div>
+            <div class="product-express-checkout">Express path available for saved billing and delivery details.</div>
+
+            <div class="adaptive-slot" data-adaptive-slot="purchase"></div>
+
+            <div class="section-shortcuts">
+              <button class="shortcut-btn is-active" type="button" data-section="description">Description</button>
+              <button class="shortcut-btn" type="button" data-section="specs">Specs</button>
+              <button class="shortcut-btn" type="button" data-section="reviews">Reviews</button>
+              <button class="shortcut-btn" type="button" data-section="faq">FAQ</button>
+            </div>
+          </aside>
+        </section>
+
+        <section class="product-secondary-info" data-adaptive-zone="benefits">
+          <div class="surface-header">
+            <div>
+              <span class="surface-eyebrow">Page role</span>
+              <h3>Why people hesitate on this page</h3>
+            </div>
+            <p>This surface intentionally mixes price, financing, trust, delivery, detailed specs, and dense review content so you can test whether the adaptive UI responds locally in the user’s current zone instead of restyling abandoned areas.</p>
+          </div>
+          <div class="adaptive-slot" data-adaptive-slot="benefits"></div>
+        </section>
+
+        <section class="research-surface" data-adaptive-zone="research">
+          <div class="research-cluster-header">
+            <div class="surface-header">
+              <div>
+                <span class="surface-eyebrow">Research cluster</span>
+                <h3>Product understanding, validation, and trust live here</h3>
+              </div>
+            </div>
+            <p>When the user enters research, the whole research surface should feel more navigable and easier to process, instead of behaving like four unrelated hover zones.</p>
+          </div>
+          <div class="adaptive-slot" data-adaptive-slot="research"></div>
+
+          <section class="product-section" id="section-description" data-section-surface="description" data-adaptive-zone="description">
+            <div class="surface-header">
+              <div>
+                <span class="surface-eyebrow">Research zone</span>
+                <h3>Description</h3>
+              </div>
+            </div>
+            <ul class="feature-list">
+              <li>Apple M4 platform tuned for productivity, light creative work, and low-noise desktop setups.</li>
+              <li>Compact chassis with front-facing ports, quiet thermals, and strong baseline performance.</li>
+              <li>Designed to trigger information-seeking behavior when comparing storage, memory, and connectivity tradeoffs.</li>
+            </ul>
+          </section>
+
+          <section class="product-section product-specs" id="section-specs" data-section-surface="specs" data-adaptive-zone="specs">
+            <div class="surface-header">
+              <div>
+                <span class="surface-eyebrow">Inspection zone</span>
+                <h3>Specifications</h3>
+              </div>
+            </div>
+            <div class="spec-grid">
+              <div class="spec-item"><div class="spec-label">Chip</div><div class="spec-value">Apple M4, 10-core CPU / 10-core GPU</div></div>
+              <div class="spec-item"><div class="spec-label">Memory</div><div class="spec-value">16GB unified memory</div></div>
+              <div class="spec-item"><div class="spec-label">Storage</div><div class="spec-value">512GB SSD</div></div>
+              <div class="spec-item"><div class="spec-label">Ports</div><div class="spec-value">Thunderbolt, HDMI, USB-C, Ethernet</div></div>
+              <div class="spec-item"><div class="spec-label">Use case</div><div class="spec-value">Coding, office, lightweight content workflows</div></div>
+              <div class="spec-item"><div class="spec-label">Noise</div><div class="spec-value">Low acoustic profile under normal load</div></div>
+            </div>
+          </section>
+
+          <section class="product-section product-full-specs" id="section-full-specs" data-section-surface="specs" data-adaptive-zone="specs">
+            <div class="surface-header">
+              <div>
+                <span class="surface-eyebrow">Deep spec sheet</span>
+                <h3>Full specification sheet</h3>
+              </div>
+            </div>
+            <p>Extended I/O, thermal, display support, and compatibility breakdown used when the UI shifts toward research assistance.</p>
+          </section>
+
+          <section class="product-reviews-teaser" id="section-reviews" data-section-surface="reviews" data-adaptive-zone="reviews">
+            <div class="surface-header">
+              <div>
+                <span class="surface-eyebrow">Reassurance zone</span>
+                <h3>Reviews</h3>
+              </div>
+            </div>
+            <div class="reviews-grid">
+              <article class="review-card">
+                <strong>Great performance for the size <small>4.8 / 5</small></strong>
+                <p>Perfect for a quiet desk. Storage sizing is the main decision point if you keep local media.</p>
+              </article>
+              <article class="review-card">
+                <strong>Fast and silent <small>4.6 / 5</small></strong>
+                <p>I hesitated between 512GB and 1TB. Reviews and specs were what decided it for me.</p>
+              </article>
+              <article class="review-card">
+                <strong>Worth checking ports before buying <small>4.7 / 5</small></strong>
+                <p>If you use many peripherals, the detailed specs section matters more than the headline price.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="product-section" id="section-faq" data-section-surface="faq" data-adaptive-zone="faq">
+            <div class="surface-header">
+              <div>
+                <span class="surface-eyebrow">Blocker checks</span>
+                <h3>FAQ</h3>
+              </div>
+            </div>
+            <ul class="feature-list">
+              <li>Can I upgrade storage later? No, so storage choice is a meaningful commitment signal.</li>
+              <li>Can I finance monthly? Yes, with checkout-side financing and standard return coverage.</li>
+              <li>Does it support dual displays? Yes, but it depends on the exact display resolution mix.</li>
+            </ul>
+          </section>
+        </section>
+
+        <div class="supporting-sections">
+          <section class="product-related" data-adaptive-zone="compare">
+            <div class="surface-header">
+              <div>
+                <span class="surface-eyebrow">Commerce comparison</span>
+                <h3>Compare with nearby alternatives</h3>
+              </div>
+            </div>
+            <div class="comparison-grid">
+              <article class="comparison-card">
+                <strong>Mac mini 256GB</strong>
+                <p>Lower entry price, weaker long-term storage flexibility.</p>
+                <span>Value option</span>
+              </article>
+              <article class="comparison-card">
+                <strong>Mac mini 1TB</strong>
+                <p>More headroom, better if local asset storage matters.</p>
+                <span>Research trigger</span>
+              </article>
+              <article class="comparison-card">
+                <strong>Studio baseline</strong>
+                <p>Performance jump, but price rises sharply.</p>
+                <span>Trust check</span>
+              </article>
+            </div>
+            <div class="adaptive-slot" data-adaptive-slot="compare"></div>
+          </section>
+
+          <section class="product-upsells noise-cluster" data-adaptive-zone="services">
+            <div class="surface-header">
+              <div>
+                <span class="surface-eyebrow">Service noise</span>
+                <h3>Upsells and service noise</h3>
+              </div>
+            </div>
+            <p>This block exists on purpose. It gives the layout layer something to reduce or suppress when the state shifts toward focus, friction relief, or localized research support.</p>
+            <div class="adaptive-slot" data-adaptive-slot="services"></div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <aside class="inspector-panel">
+      <h2>Live Inspector</h2>
+
+      <div class="inspector-state">
+        <div class="inspector-state-label">Primary State</div>
+        <div class="inspector-state-value" id="inspector-state">CALM_BROWSING</div>
+        <div class="inspector-state-desc" id="inspector-desc">STANDARD · none · CALM</div>
+
+        <div class="inspector-confidence">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#9ca3af;">
+            <span>Confidence</span>
+            <span id="inspector-confidence-val">0%</span>
+          </div>
+          <div class="confidence-bar">
+            <div class="confidence-fill" id="inspector-confidence-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="inspector-matches">
+        <h2>State Scores</h2>
+        <div id="inspector-matches-list"></div>
+      </div>
+
+      <div class="inspector-thresholds">
+        <h2>Threshold Engine</h2>
+        <div id="inspector-thresholds"></div>
+      </div>
+
+      <div class="inspector-rules">
+        <h2>Rules &amp; Reasons</h2>
+        <div id="inspector-rules-list"></div>
+      </div>
+
+      <div class="inspector-json">
+        <h2>Live Payload</h2>
+        <pre id="inspector-json">{}</pre>
+      </div>
+    </aside>
+  </div>
+
+  <div id="ur-widget" aria-live="polite">
+    <div class="ur-kicker">Adaptive surface</div>
+    <div class="ur-label" data-ur-label>Adapted: STANDARD</div>
+    <div class="ur-desc" data-ur-desc>Localized intervention inactive.</div>
+    <div class="ur-actions">
+      <button type="button" data-ur-details>Inspect</button>
+      <button type="button" data-ur-reset>Reset</button>
+    </div>
+  </div>
+
+  <script src="../chrome-extension/config.js?v=20260308-2215"></script>
+  <script src="../chrome-extension/pipeline/canonicalStates.js?v=20260308-2215"></script>
+  <script src="../chrome-extension/pipeline/stateContract.js?v=20260308-2215"></script>
+  <script src="../chrome-extension/pipeline/dataCollector.js?v=20260308-2215"></script>
+  <script src="../chrome-extension/pipeline/pageContextExtractor.js?v=20260308-2215"></script>
+  <script src="../chrome-extension/pipeline/featureExtractor.js?v=20260308-2215"></script>
+  <script src="../chrome-extension/pipeline/reasonCodeEngine.js?v=20260308-2215"></script>
+  <script src="../chrome-extension/pipeline/stateClassifier.js?v=20260308-2215"></script>
+  <script src="../chrome-extension/pipeline/adaptationMapper.js?v=20260308-2215"></script>
+  <script src="../chrome-extension/pipeline/rulesResolver.js?v=20260308-2215"></script>
+  <script src="../chrome-extension/pipeline/hysteresisGuard.js?v=20260308-2215"></script>
+  <script src="../chrome-extension/pipeline/outcomeLogger.js?v=20260308-2215"></script>
+  <script src="./live-mvp.js?v=20260308-2215"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "trained_samples": 0,
+  "lr": 0.03,
+  "l2": 0.0003,
+  "actions": {
+    "default": { "b": 0, "rage_clicks": 0, "mouse_jitter": 0, "exit_intent": 0, "scroll_thrash": 0, "dead_clicks": 0, "dwell_events": 0, "scroll_depth": 0, "time_on_price": 0, "form_errors": 0, "fast_scroll": 0, "user_returning": 0 },
+    "show_price_tools": { "b": 0, "rage_clicks": 0, "mouse_jitter": 0, "exit_intent": 0, "scroll_thrash": 0, "dead_clicks": 0, "dwell_events": 0, "scroll_depth": 0, "time_on_price": 0, "form_errors": 0, "fast_scroll": 0, "user_returning": 0 },
+    "simplify_layout": { "b": 0, "rage_clicks": 0, "mouse_jitter": 0, "exit_intent": 0, "scroll_thrash": 0, "dead_clicks": 0, "dwell_events": 0, "scroll_depth": 0, "time_on_price": 0, "form_errors": 0, "fast_scroll": 0, "user_returning": 0 },
+    "show_reassurance": { "b": 0, "rage_clicks": 0, "mouse_jitter": 0, "exit_intent": 0, "scroll_thrash": 0, "dead_clicks": 0, "dwell_events": 0, "scroll_depth": 0, "time_on_price": 0, "form_errors": 0, "fast_scroll": 0, "user_returning": 0 },
+    "streamline_checkout": { "b": 0, "rage_clicks": 0, "mouse_jitter": 0, "exit_intent": 0, "scroll_thrash": 0, "dead_clicks": 0, "dwell_events": 0, "scroll_depth": 0, "time_on_price": 0, "form_errors": 0, "fast_scroll": 0, "user_returning": 0 },
+    "expand_details": { "b": 0, "rage_clicks": 0, "mouse_jitter": 0, "exit_intent": 0, "scroll_thrash": 0, "dead_clicks": 0, "dwell_events": 0, "scroll_depth": 0, "time_on_price": 0, "form_errors": 0, "fast_scroll": 0, "user_returning": 0 },
+    "highlight_actions": { "b": 0, "rage_clicks": 0, "mouse_jitter": 0, "exit_intent": 0, "scroll_thrash": 0, "dead_clicks": 0, "dwell_events": 0, "scroll_depth": 0, "time_on_price": 0, "form_errors": 0, "fast_scroll": 0, "user_returning": 0 }
+  }
+}

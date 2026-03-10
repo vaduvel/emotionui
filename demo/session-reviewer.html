@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EmotionUI — Session Reviewer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f172a;
+    --bg2: #1e293b;
+    --bg3: #273348;
+    --border: #334155;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --blue: #3b82f6;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --orange: #f97316;
+    --violet: #8b5cf6;
+    --cyan: #06b6d4;
+    --slate: #94a3b8;
+    --s-calm: #94a3b8;
+    --s-exploring: #3b82f6;
+    --s-deep: #8b5cf6;
+    --s-price: #f59e0b;
+    --s-reassurance: #06b6d4;
+    --s-frustrated: #ef4444;
+    --s-overwhelmed: #f97316;
+    --s-decision: #10b981;
+  }
+
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: 13px; }
+
+  /* ── Layout ─────────────────────────────── */
+  #app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* Panel 1 — Session List */
+  #panel-list { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+  #list-header { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  #list-header h1 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  #filters { display: flex; flex-direction: column; gap: 6px; }
+  #filters select, #filters input { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 6px; font-size: 12px; width: 100%; }
+  #filters .filter-row { display: flex; gap: 6px; }
+  #filters .filter-row select, #filters .filter-row input { flex: 1; }
+  #load-btn { margin-top: 4px; background: var(--blue); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; width: 100%; }
+  #load-btn:hover { opacity: 0.88; }
+  #session-count { padding: 6px 14px; font-size: 11px; color: var(--text3); border-bottom: 1px solid var(--border); }
+  #session-list { flex: 1; overflow-y: auto; }
+  .session-row { padding: 9px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  .session-row:hover { background: var(--bg3); }
+  .session-row.selected { background: #1e3a5f; border-left: 3px solid var(--blue); }
+  .session-row.outcome-positive { border-left: 3px solid var(--green); }
+  .session-row.outcome-wishlist { border-left: 3px solid var(--amber); }
+  .session-row.outcome-bounce { border-left: 3px solid var(--red); }
+  .session-row.outcome-neutral { border-left: 3px solid var(--border); }
+  .sr-id { font-size: 11px; color: var(--text3); font-family: monospace; }
+  .sr-state { font-size: 12px; font-weight: 600; margin: 2px 0; }
+  .sr-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); }
+  .sr-product { font-size: 11px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .labeled-badge { display: inline-block; width: 6px; height: 6px; background: var(--green); border-radius: 50%; margin-left: 4px; vertical-align: middle; }
+
+  /* Panel 2 — Detail */
+  #panel-detail { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  #empty-state { display: flex; align-items: center; justify-content: center; flex: 1; color: var(--text3); font-size: 14px; }
+
+  /* Panel 3 — Labels */
+  #panel-labels { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; border-left: 1px solid var(--border); }
+  #labels-header { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
+  #labels-body { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 14px; }
+  #labels-footer { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+
+  /* Cards */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 10px; }
+
+  /* Summary card */
+  #summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sum-item { display: flex; flex-direction: column; }
+  .sum-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; }
+  .sum-value { font-size: 13px; font-weight: 500; color: var(--text); margin-top: 2px; }
+  .sum-value.large { font-size: 20px; font-weight: 700; }
+  #state-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+
+  /* Tags */
+  .tag-list { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); }
+  .tag.reason { border-color: var(--violet); color: var(--violet); }
+  .tag.constraint { border-color: var(--amber); color: var(--amber); }
+
+  /* Timeline */
+  #timeline-wrap { position: relative; }
+  #section-bar { height: 32px; display: flex; border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
+  .section-seg { display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.8); overflow: hidden; white-space: nowrap; }
+  #event-timeline { position: relative; height: 56px; background: var(--bg3); border-radius: 6px; margin-bottom: 6px; overflow: hidden; }
+  .tl-axis { position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: var(--border); }
+  .tl-event { position: absolute; transform: translateX(-50%); }
+  .tl-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .tl-tri { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; }
+  .tl-label { font-size: 9px; color: var(--text3); position: absolute; top: 34px; transform: translateX(-50%); white-space: nowrap; }
+  #tl-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  .tl-leg-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text2); }
+  .tl-leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Score bars */
+  .score-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .score-bar-label { font-size: 11px; color: var(--text2); width: 130px; flex-shrink: 0; text-align: right; }
+  .score-bar-track { flex: 1; height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .score-bar-val { font-size: 11px; color: var(--text3); width: 36px; text-align: right; }
+
+  /* Normalized features grid */
+  #feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .feat-cell { background: var(--bg3); border-radius: 4px; padding: 4px 6px; }
+  .feat-name { font-size: 9px; color: var(--text3); }
+  .feat-val { font-size: 11px; font-weight: 600; }
+
+  /* Page context */
+  #ctx-hints { display: flex; flex-wrap: wrap; gap: 4px; }
+  .ctx-hint { padding: 3px 8px; border-radius: 4px; font-size: 11px; background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; }
+  .ctx-hint.missing { background: var(--bg3); border-color: var(--border); color: var(--text3); text-decoration: line-through; }
+  #ctx-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+  .ctx-metric { background: var(--bg3); border-radius: 4px; padding: 4px 8px; }
+  .ctx-metric-label { font-size: 9px; color: var(--text3); }
+  .ctx-metric-val { font-size: 12px; font-weight: 600; }
+
+  /* Mode history */
+  .mode-hist-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .mode-hist-row:last-child { border-bottom: none; }
+  .mode-hist-time { font-size: 10px; color: var(--text3); width: 50px; }
+  .mode-hist-mode { font-size: 11px; font-weight: 600; }
+  .mode-hist-policy { font-size: 10px; color: var(--text3); }
+  .mode-hist-reason { font-size: 10px; color: var(--text2); flex: 1; text-align: right; }
+
+  /* Label panel */
+  .label-group { display: flex; flex-direction: column; gap: 6px; }
+  .label-group label { font-size: 11px; font-weight: 600; color: var(--text); }
+  .radio-group { display: flex; flex-direction: column; gap: 4px; }
+  .radio-opt { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 4px 6px; border-radius: 4px; border: 1px solid transparent; }
+  .radio-opt:hover { background: var(--bg3); }
+  .radio-opt input[type=radio] { accent-color: var(--blue); }
+  .radio-opt span { font-size: 12px; color: var(--text2); }
+  .radio-opt.selected { border-color: var(--blue); background: rgba(59,130,246,0.08); }
+  .radio-opt.selected span { color: var(--text); }
+  select.label-select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 6px; font-size: 12px; width: 100%; }
+  textarea.label-notes { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 6px 8px; border-radius: 6px; font-size: 12px; width: 100%; resize: vertical; min-height: 52px; font-family: inherit; }
+  .btn { padding: 7px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 500; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { opacity: 0.88; }
+  #save-status { font-size: 11px; text-align: center; }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Loading */
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading-row { padding: 20px; text-align: center; color: var(--text3); }
+
+  /* Kbd hints */
+  .kbd { display: inline-block; padding: 1px 4px; border: 1px solid var(--border); border-radius: 3px; font-size: 10px; color: var(--text3); font-family: monospace; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ PANEL 1: Session List ══════════════════════════════════════════ -->
+  <div id="panel-list">
+    <div id="list-header">
+      <h1>EmotionUI Sessions</h1>
+      <div id="filters">
+        <div class="filter-row">
+          <select id="f-state">
+            <option value="">All states</option>
+            <option value="CALM_BROWSING">CALM_BROWSING</option>
+            <option value="EXPLORING">EXPLORING</option>
+            <option value="DEEP_RESEARCH">DEEP_RESEARCH</option>
+            <option value="PRICE_SENSITIVE">PRICE_SENSITIVE</option>
+            <option value="REASSURANCE_SEEKING">REASSURANCE_SEEKING</option>
+            <option value="FRUSTRATED">FRUSTRATED</option>
+            <option value="OVERWHELMED">OVERWHELMED</option>
+            <option value="DECISION_READY">DECISION_READY</option>
+          </select>
+          <select id="f-policy">
+            <option value="">All policies</option>
+            <option value="SILENT">SILENT</option>
+            <option value="OBSERVE">OBSERVE</option>
+            <option value="INTERVENE">INTERVENE</option>
+          </select>
+        </div>
+        <div class="filter-row">
+          <select id="f-outcome">
+            <option value="">All outcomes</option>
+            <option value="left">left</option>
+            <option value="added_to_cart">cart</option>
+            <option value="checkout_started">checkout</option>
+            <option value="purchase_completed">purchase</option>
+            <option value="inactivity_30s">inactivity</option>
+            <option value="tab_closed">tab_closed</option>
+          </select>
+          <input type="number" id="f-minconf" placeholder="Min conf" min="0" max="1" step="0.05" style="width:90px">
+        </div>
+        <div class="filter-row">
+          <input type="date" id="f-date-from" placeholder="From">
+          <input type="date" id="f-date-to" placeholder="To">
+        </div>
+        <button id="load-btn">↻ Load Sessions</button>
+      </div>
+    </div>
+    <div id="session-count">— sessions</div>
+    <div id="session-list"></div>
+  </div>
+
+  <!-- ══ PANEL 2: Detail ════════════════════════════════════════════════ -->
+  <div id="panel-detail">
+    <div id="empty-state">Select a session to review</div>
+  </div>
+
+  <!-- ══ PANEL 3: Labels ════════════════════════════════════════════════ -->
+  <div id="panel-labels">
+    <div id="labels-header">
+      Label Session <span class="kbd">↑↓</span> navigate
+    </div>
+    <div id="labels-body">
+      <div style="color:var(--text3);font-size:12px">Select a session to label it.</div>
+    </div>
+    <div id="labels-footer">
+      <button class="btn btn-primary" id="btn-save">Save Labels</button>
+      <button class="btn btn-green" id="btn-save-next">Save &amp; Next →</button>
+      <button class="btn btn-secondary" id="btn-export">Export Labeled JSON</button>
+      <div id="save-status"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// CONFIG — edit these if credentials change
+// ══════════════════════════════════════════════════════════════════════
+const SUPABASE_URL  = 'https://tmhymprkpbxvqhxofxvy.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtaHltcHJrcGJ4dnFoeG9meHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NTY3MzQsImV4cCI6MjA4ODEzMjczNH0.yoL-3aCD2iTBRnmFwZQG5LDe0to7WBbGYBCcnYXcjvI';
+const PAGE_SIZE     = 100;
+
+// ══ State color map ═══════════════════════════════════════════════════
+const STATE_COLORS = {
+  CALM_BROWSING:       '#94a3b8',
+  EXPLORING:           '#3b82f6',
+  DEEP_RESEARCH:       '#8b5cf6',
+  PRICE_SENSITIVE:     '#f59e0b',
+  REASSURANCE_SEEKING: '#06b6d4',
+  FRUSTRATED:          '#ef4444',
+  OVERWHELMED:         '#f97316',
+  OVERLOADED:          '#f97316',
+  DECISION_READY:      '#10b981',
+};
+const STATE_LABELS = Object.keys(STATE_COLORS).filter(k => k !== 'OVERLOADED');
+
+const POLICY_COLORS = { SILENT: '#64748b', OBSERVE: '#3b82f6', INTERVENE: '#10b981' };
+const SECTION_COLORS = {
+  gallery:     '#3b82f6',
+  description: '#8b5cf6',
+  specs:       '#06b6d4',
+  reviews:     '#f59e0b',
+  faq:         '#10b981',
+};
+
+// ══ Local state ════════════════════════════════════════════════════════
+let allSessions = [];
+let filteredSessions = [];
+let selectedIdx = -1;
+let labels = JSON.parse(localStorage.getItem('emo_labels') || '{}');
+
+function saveLabelsToStorage() {
+  localStorage.setItem('emo_labels', JSON.stringify(labels));
+}
+
+// ══ Supabase fetch ═════════════════════════════════════════════════════
+async function fetchSessions() {
+  const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  const fromDate = document.getElementById('f-date-from').value;
+  const toDate   = document.getElementById('f-date-to').value;
+
+  let url = `${SUPABASE_URL}/rest/v1/sessions?select=id,session_id,product_id,created_at,classified_state,classified_action,confidence,outcome,time_on_page_sec,funnel_stage,user_type,traffic_source,outcome_detail&order=created_at.desc&limit=${PAGE_SIZE}`;
+  if (fromDate) url += `&created_at=gte.${fromDate}T00:00:00`;
+  if (toDate)   url += `&created_at=lte.${toDate}T23:59:59`;
+
+  const resp = await fetch(url, { headers });
+  if (!resp.ok) throw new Error(`Supabase error ${resp.status}: ${await resp.text()}`);
+  return resp.json();
+}
+
+// ══ Helpers ════════════════════════════════════════════════════════════
+function stateColor(s) { return STATE_COLORS[String(s || '').toUpperCase()] || '#94a3b8'; }
+function policyColor(p) { return POLICY_COLORS[String(p || '').toUpperCase()] || '#64748b'; }
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short' }) + ' ' +
+    d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+}
+function fmtDur(sec) {
+  if (!sec) return '0s';
+  if (sec < 60) return `${sec}s`;
+  return `${Math.floor(sec/60)}m ${sec % 60}s`;
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function pct(v) { return `${(clamp(Number(v)||0,0,1)*100).toFixed(1)}%`; }
+
+function getPrimaryState(session) {
+  return session?.outcome_detail?.policy?.primary_state
+    || session?.classified_state
+    || 'CALM_BROWSING';
+}
+function getPolicy(session) {
+  return session?.outcome_detail?.policy?.policy
+    || session?.classified_action
+    || 'SILENT';
+}
+function getOutcomeClass(session) {
+  const od = session.outcome_detail || {};
+  if (od.purchase_completed || od.checkout_started || od.added_to_cart) return 'outcome-positive';
+  if (od.added_to_wishlist) return 'outcome-wishlist';
+  const dur = Number(session.time_on_page_sec || 0);
+  if (dur < 10) return 'outcome-bounce';
+  return 'outcome-neutral';
+}
+
+// ══ Session List Rendering ══════════════════════════════════════════════
+function applyFilters() {
+  const fState  = document.getElementById('f-state').value;
+  const fPolicy = document.getElementById('f-policy').value;
+  const fOut    = document.getElementById('f-outcome').value;
+  const fConf   = Number(document.getElementById('f-minconf').value || 0);
+
+  filteredSessions = allSessions.filter(s => {
+    if (fState  && getPrimaryState(s) !== fState) return false;
+    if (fPolicy && getPolicy(s) !== fPolicy) return false;
+    if (fOut) {
+      const od = s.outcome_detail || {};
+      if (fOut === 'added_to_cart' && !od.added_to_cart) return false;
+      if (fOut === 'checkout_started' && !od.checkout_started) return false;
+      if (fOut === 'purchase_completed' && !od.purchase_completed) return false;
+      if (!['added_to_cart','checkout_started','purchase_completed'].includes(fOut) && s.outcome !== fOut) return false;
+    }
+    if (fConf && Number(s.confidence||0) < fConf) return false;
+    return true;
+  });
+
+  renderSessionList();
+}
+
+function renderSessionList() {
+  const el = document.getElementById('session-list');
+  document.getElementById('session-count').textContent =
+    `${filteredSessions.length} sessions${filteredSessions.length < allSessions.length ? ' (filtered)' : ''}`;
+
+  if (!filteredSessions.length) {
+    el.innerHTML = '<div style="padding:20px;color:var(--text3);text-align:center">No sessions found</div>';
+    return;
+  }
+
+  el.innerHTML = filteredSessions.map((s, i) => {
+    const state   = getPrimaryState(s);
+    const policy  = getPolicy(s);
+    const conf    = Number(s.confidence || 0);
+    const dur     = fmtDur(s.time_on_page_sec);
+    const oc      = getOutcomeClass(s);
+    const isLab   = Boolean(labels[s.session_id]);
+    const isSelected = i === selectedIdx;
+    return `<div class="session-row ${oc} ${isSelected ? 'selected' : ''}" data-idx="${i}">
+      <div class="sr-id">${(s.session_id||'').slice(-16)}${isLab ? '<span class="labeled-badge"></span>' : ''}</div>
+      <div class="sr-state" style="color:${stateColor(state)}">${state}</div>
+      <div class="sr-product">${s.product_id || '—'}</div>
+      <div class="sr-meta">
+        <span>${fmtDate(s.created_at)}</span>
+        <span style="color:${policyColor(policy)}">${policy}</span>
+        <span>${dur} · ${(conf*100).toFixed(0)}%</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.session-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const i = Number(row.dataset.idx);
+      selectSession(i);
+    });
+  });
+}
+
+// ══ Session Selection ══════════════════════════════════════════════════
+function selectSession(idx) {
+  if (idx < 0 || idx >= filteredSessions.length) return;
+  selectedIdx = idx;
+  renderSessionList();
+  renderDetail(filteredSessions[idx]);
+  renderLabelPanel(filteredSessions[idx]);
+  // scroll row into view
+  const rows = document.querySelectorAll('.session-row');
+  if (rows[idx]) rows[idx].scrollIntoView({ block: 'nearest' });
+}
+
+// ══ Detail Panel ═══════════════════════════════════════════════════════
+function renderDetail(s) {
+  const detail  = document.getElementById('panel-detail');
+  const od      = s.outcome_detail || {};
+  const pol     = od.policy || {};
+  const raw     = pol.raw_snapshot_summary || {};
+  const norm    = pol.normalized_features || {};
+  const derived = pol.derived_scores || {};
+  const ctxM    = pol.context_metrics || {};
+  const pc      = pol.page_context || {};
+  const pcm     = pol.page_context_metrics || {};
+  const pch     = pol.page_context_hints || Object.keys(pc).filter(k => pc[k]);
+  const modeHist = Array.isArray(pol.mode_history) ? pol.mode_history : [];
+  const state   = pol.primary_state || s.classified_state || 'CALM_BROWSING';
+  const sc      = stateColor(state);
+  const pageStartTs = ctxM.sessionDurationSec
+    ? Date.now() - Number(ctxM.sessionDurationSec||0)*1000 : 0;
+
+  detail.innerHTML = '';
+
+  // ── A: Summary card ──────────────────────────────────────────────────
+  const sumCard = mkCard('Summary');
+  sumCard.innerHTML += `
+    <div id="summary-grid">
+      <div class="sum-item" style="grid-column:1/-1">
+        <div class="sum-label">Canonical State</div>
+        <div class="sum-value large">
+          <span id="state-badge" style="background:${sc}22;color:${sc};border:1px solid ${sc}55">${state}</span>
+          <span style="color:var(--text3);font-size:13px;font-weight:400;margin-left:8px">
+            ${((Number(pol.state_confidence||s.confidence||0))*100).toFixed(1)}% confidence
+          </span>
+        </div>
+      </div>
+      ${sumRow('Policy', `<span style="color:${policyColor(pol.policy||s.classified_action)};font-weight:600">${pol.policy||s.classified_action||'—'}</span>`, pol.source || s.funnel_stage || '')}
+      ${sumRow('Resolved Mode', pol.resolved_mode || s.classified_state || '—', pol.intervention_type || 'none')}
+      ${sumRow('Duration', fmtDur(s.time_on_page_sec), `Funnel: ${s.funnel_stage||'—'}`)}
+      ${sumRow('Product', s.product_id||'—', (s.user_type||'')+' / '+(s.traffic_source||''))}
+      ${sumRow('PDP Gate', `${pol.pdp_gate_verdict||'UNSURE'} (${((Number(pol.pdp_gate_score||0))*100).toFixed(0)}%)`, '')}
+      ${sumRow('Affect', pol.affect_tag||'—', pol.intent_tag||'—')}
+      ${sumRow('Date', fmtDate(s.created_at), `Session ${(s.session_id||'').slice(-8)}`)}
+    </div>
+    <div style="margin-top:10px">
+      <div class="card-title">Constraint Tags</div>
+      <div class="tag-list">${(pol.constraint_tags||[]).map(t=>`<span class="tag constraint">${t}</span>`).join('')||'<span style="color:var(--text3);font-size:11px">none</span>'}</div>
+    </div>
+    <div style="margin-top:8px">
+      <div class="card-title">Reason Codes</div>
+      <div class="tag-list">${(pol.reason_codes||[]).map(t=>`<span class="tag reason">${t}</span>`).join('')||'<span style="color:var(--text3);font-size:11px">none</span>'}
+      ${(pol.reason_families||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    </div>
+    <div style="margin-top:8px">
+      <div class="card-title">Outcome Events</div>
+      <div class="tag-list">
+        ${od.added_to_wishlist ? '<span class="tag" style="color:var(--amber);border-color:var(--amber)">wishlist</span>' : ''}
+        ${od.added_to_cart ? '<span class="tag" style="color:var(--green);border-color:var(--green)">add_to_cart</span>' : ''}
+        ${od.checkout_started ? '<span class="tag" style="color:var(--green);border-color:var(--green)">checkout</span>' : ''}
+        ${od.purchase_completed ? '<span class="tag" style="color:var(--green);border-color:var(--green)">purchase</span>' : ''}
+        ${od.intervention_exposed ? '<span class="tag" style="color:var(--violet);border-color:var(--violet)">exposed</span>' : ''}
+        ${od.intervention_accepted ? '<span class="tag" style="color:var(--blue);border-color:var(--blue)">accepted</span>' : ''}
+        ${od.intervention_closed ? '<span class="tag" style="color:var(--red);border-color:var(--red)">closed</span>' : ''}
+        ${od.review_dwell_over_10s ? '<span class="tag" style="color:var(--cyan);border-color:var(--cyan)">review_10s</span>' : ''}
+      </div>
+    </div>
+  `;
+  detail.appendChild(sumCard);
+
+  // ── B: Behavioral Timeline ────────────────────────────────────────────
+  const tlCard = mkCard('Behavioral Timeline');
+  // Section dwell bar
+  const dwellMs = raw.section_dwell_ms || {};
+  const totalDwell = Object.values(dwellMs).reduce((a, v) => a + Number(v||0), 0) || 1;
+  const sectionOrder = ['gallery','description','specs','reviews','faq'];
+  let sectionBar = '';
+  for (const sec of sectionOrder) {
+    const ms = Number(dwellMs[sec] || 0);
+    if (!ms) continue;
+    const pctW = (ms / totalDwell * 100).toFixed(1);
+    const col = SECTION_COLORS[sec] || '#64748b';
+    sectionBar += `<div class="section-seg" title="${sec}: ${(ms/1000).toFixed(1)}s" style="width:${pctW}%;background:${col}22;border-right:2px solid ${col}88;color:${col}">${pctW > 8 ? sec : ''}</div>`;
+  }
+  // Timeline events (proportional placement based on what we know)
+  const durSec = Number(s.time_on_page_sec || ctxM.sessionDurationSec || 60);
+  const tlEvents = buildTimelineEvents(raw, od, durSec);
+  let tlEventsHtml = tlEvents.map(ev => {
+    const leftPct = clamp(ev.t / durSec * 100, 0, 99).toFixed(1);
+    return `<div class="tl-event" style="left:${leftPct}%;bottom:${ev.y || 8}px">
+      <div class="${ev.shape === 'tri' ? 'tl-tri' : 'tl-dot'}" style="background:${ev.color};${ev.shape === 'tri' ? `border-bottom:8px solid ${ev.color}` : ''}"></div>
+    </div>`;
+  }).join('');
+
+  tlCard.innerHTML += `
+    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">
+      Section Dwell — total ${fmtDur(Math.round(totalDwell/1000))}
+    </div>
+    <div id="section-bar">${sectionBar || '<div style="width:100%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3)">No section data</div>'}</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:4px">
+      Event Markers — ${fmtDur(durSec)} session
+    </div>
+    <div id="event-timeline">
+      <div class="tl-axis"></div>
+      ${tlEventsHtml}
+    </div>
+    <div id="tl-legend">
+      <div class="tl-leg-item"><div class="tl-leg-dot" style="background:#94a3b8"></div>click (${raw.clicks||0})</div>
+      <div class="tl-leg-item"><div class="tl-leg-dot" style="background:var(--red)"></div>rage (${raw.rage_clicks||0})</div>
+      <div class="tl-leg-item"><div class="tl-leg-dot" style="background:var(--orange)"></div>dead (${raw.dead_clicks||0})</div>
+      <div class="tl-leg-item"><div class="tl-leg-dot" style="background:var(--blue)"></div>reversal (${raw.scroll_reversals||0})</div>
+      <div class="tl-leg-item"><div class="tl-leg-dot" style="background:var(--green)"></div>commerce</div>
+      <div class="tl-leg-item"><div class="tl-leg-dot" style="background:var(--violet)"></div>intervention</div>
+    </div>
+    <div style="margin-top:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:11px">
+      ${metaCell('Clicks', raw.clicks||0)}
+      ${metaCell('Scroll Rev.', raw.scroll_reversals||0)}
+      ${metaCell('Price Hover', raw.price_hover||0)}
+      ${metaCell('Scroll Depth', pct(raw.max_scroll_percentage))}
+      ${metaCell('Exit Intent', raw.exit_intent||0)}
+      ${metaCell('Mouse Jitter', Number(raw.mouse_jitter||0).toFixed(1))}
+      ${metaCell('Section Sw.', raw.section_switches||0)}
+      ${metaCell('Cart Changes', raw.cart_add_remove||0)}
+    </div>
+  `;
+  detail.appendChild(tlCard);
+
+  // ── C: Score Breakdown ────────────────────────────────────────────────
+  const scCard = mkCard('State Scores & Derived Scores');
+  const stateScores = pol.state_scores || {};
+  const scoreBars = STATE_LABELS.map(st => {
+    const v = clamp(Number(stateScores[st]||0), 0, 1);
+    const col = stateColor(st);
+    const isTop = st === state;
+    return `<div class="score-bar-row">
+      <div class="score-bar-label" style="color:${isTop?col:'var(--text2)'};font-weight:${isTop?600:400}">${st}</div>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:${(v*100).toFixed(1)}%;background:${col}${isTop?'':'88'}"></div></div>
+      <div class="score-bar-val">${(v*100).toFixed(1)}%</div>
+    </div>`;
+  }).join('');
+
+  const derivedKeys = ['friction_score','hesitation_score','research_depth_score','purchase_momentum_score','decision_reengagement_score','negotiation_pressure_score','express_checkout_score','frustration_rebound_score'];
+  const derivedColors = ['#ef4444','#f97316','#8b5cf6','#10b981','#3b82f6','#f59e0b','#06b6d4','#ef4444'];
+  const derivedBars = derivedKeys.map((k, i) => {
+    const v = clamp(Number(derived[k]||0), 0, 1);
+    return `<div class="score-bar-row">
+      <div class="score-bar-label">${k.replace(/_score$/,'').replace(/_/g,' ')}</div>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:${(v*100).toFixed(1)}%;background:${derivedColors[i]}"></div></div>
+      <div class="score-bar-val">${(v*100).toFixed(1)}%</div>
+    </div>`;
+  }).join('');
+
+  scCard.innerHTML += `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div class="card-title" style="margin-bottom:8px">State Scores</div>
+        ${scoreBars}
+      </div>
+      <div>
+        <div class="card-title" style="margin-bottom:8px">Derived Scores</div>
+        ${derivedBars}
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="card-title">Normalized Features</div>
+      <div id="feature-grid">${renderFeatureGrid(norm)}</div>
+    </div>
+  `;
+  detail.appendChild(scCard);
+
+  // ── D: Page Context ───────────────────────────────────────────────────
+  const pcCard = mkCard('Page Context');
+  const allHints = ['hasPrimaryPrice','hasDiscountSignal','hasStickyPurchaseCta','hasUrgencySignal','hasInstallmentSignal','hasReviewDensitySignal','hasSpecTableSignal','hasTrustSignal','hasVariantChoices','hasCompareAction','hasShippingSignal','hasWarrantySignal','hasPromoCluster'];
+  const pcHints = allHints.map(h => {
+    const active = Boolean(pc[h]);
+    return `<span class="ctx-hint${active?'':' missing'}">${h.replace(/^has/,'')}</span>`;
+  }).join('');
+  const pcMetrics = Object.entries(pcm).map(([k, v]) =>
+    `<div class="ctx-metric"><div class="ctx-metric-label">${k}</div><div class="ctx-metric-val">${typeof v === 'number' ? v.toFixed(2) : v}</div></div>`
+  ).join('');
+  pcCard.innerHTML += `
+    <div id="ctx-hints">${pcHints}</div>
+    ${pcMetrics ? `<div id="ctx-metrics">${pcMetrics}</div>` : ''}
+  `;
+  detail.appendChild(pcCard);
+
+  // ── E: Mode History ───────────────────────────────────────────────────
+  if (modeHist.length) {
+    const mhCard = mkCard('Mode History');
+    mhCard.innerHTML += modeHist.map((entry, i) => {
+      const col = policyColor(entry.policy);
+      const relSec = pageStartTs ? Math.round((Number(entry.ts||0) - pageStartTs) / 1000) : i;
+      return `<div class="mode-hist-row">
+        <div class="mode-hist-time">+${relSec}s</div>
+        <div class="mode-hist-mode" style="color:${stateColor(entry.mode)||'var(--text)'}">${entry.mode||'—'}</div>
+        <div class="mode-hist-policy" style="color:${col}">${entry.policy||'—'}</div>
+        <div class="mode-hist-reason">${entry.reason||'—'}</div>
+      </div>`;
+    }).join('');
+    detail.appendChild(mhCard);
+  }
+}
+
+// ══ Helper builders ════════════════════════════════════════════════════
+function mkCard(title) {
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.innerHTML = `<div class="card-title">${title}</div>`;
+  return el;
+}
+function sumRow(label, value, sub) {
+  return `<div class="sum-item">
+    <div class="sum-label">${label}</div>
+    <div class="sum-value">${value}</div>
+    ${sub ? `<div style="font-size:10px;color:var(--text3)">${sub}</div>` : ''}
+  </div>`;
+}
+function metaCell(label, value) {
+  return `<div style="background:var(--bg3);border-radius:4px;padding:5px 8px">
+    <div style="font-size:9px;color:var(--text3)">${label}</div>
+    <div style="font-size:12px;font-weight:600">${value}</div>
+  </div>`;
+}
+
+function renderFeatureGrid(norm) {
+  return Object.entries(norm).map(([k, v]) => {
+    const n = clamp(Number(v||0), 0, 1);
+    const intensity = Math.round(n * 80).toString(16).padStart(2,'0');
+    return `<div class="feat-cell" style="background:#3b82f6${intensity}22">
+      <div class="feat-name">${k.replace(/Signal$|Rate$|Score$|Coverage$|Percentage$|Risk$/,'').slice(0,14)}</div>
+      <div class="feat-val" style="color:${n>0.5?'var(--blue)':'var(--text2)'}">${n.toFixed(3)}</div>
+    </div>`;
+  }).join('');
+}
+
+function buildTimelineEvents(raw, od, durSec) {
+  const evs = [];
+  const dur = durSec || 60;
+  const n = (count, shape, color, yBase) => {
+    if (!count) return;
+    // Distribute events evenly across the session duration
+    for (let i = 0; i < count; i++) {
+      evs.push({ t: (i + 0.5) / count * dur * 0.85, shape: shape || 'dot', color, y: yBase || 8 });
+    }
+  };
+  n(raw.clicks, 'dot', '#94a3b8', 8);
+  n(raw.rage_clicks, 'dot', '#ef4444', 20);
+  n(raw.dead_clicks, 'dot', '#f97316', 14);
+  n(raw.scroll_reversals, 'dot', '#3b82f6', 30);
+  n(raw.exit_intent, 'tri', '#ef4444', 36);
+  // Commerce events — place later in session
+  const commerceOffset = dur * 0.6;
+  if (od.added_to_wishlist) evs.push({ t: commerceOffset, shape:'dot', color:'#f59e0b', y:24 });
+  if (od.added_to_cart)     evs.push({ t: commerceOffset + dur*0.05, shape:'dot', color:'#10b981', y:24 });
+  if (od.checkout_started)  evs.push({ t: dur*0.85, shape:'dot', color:'#10b981', y:32 });
+  if (od.purchase_completed)evs.push({ t: dur*0.95, shape:'dot', color:'#10b981', y:40 });
+  if (od.intervention_exposed) evs.push({ t: dur*0.5, shape:'dot', color:'#8b5cf6', y:40 });
+  if (od.intervention_accepted) evs.push({ t: dur*0.55, shape:'dot', color:'#3b82f6', y:46 });
+  if (od.intervention_closed)   evs.push({ t: dur*0.6,  shape:'dot', color:'#ef4444', y:46 });
+  return evs;
+}
+
+// ══ Label Panel ════════════════════════════════════════════════════════
+function renderLabelPanel(s) {
+  const sid  = s.session_id;
+  const cur  = labels[sid] || {};
+  const body = document.getElementById('labels-body');
+  const state = getPrimaryState(s);
+
+  body.innerHTML = `
+    <div style="font-size:11px;color:var(--text3);font-family:monospace;word-break:break-all">${sid}</div>
+
+    <!-- Label 1: State correct? -->
+    <div class="label-group">
+      <label>1. State classification correct? <span class="kbd">1–3</span></label>
+      <div class="radio-group" id="lg-state">
+        ${radioOpt('state_correct','correct','Correct',cur.state_correct)}
+        ${radioOpt('state_correct','wrong','Wrong',cur.state_correct)}
+        ${radioOpt('state_correct','uncertain','Uncertain',cur.state_correct)}
+      </div>
+      <div id="wrong-state-wrap" style="display:${cur.state_correct==='wrong'?'block':'none'}">
+        <select class="label-select" id="l-correct-state">
+          <option value="">Select correct state</option>
+          ${STATE_LABELS.map(st => `<option value="${st}" ${cur.correct_state===st?'selected':''}>${st}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <!-- Label 2: Timing -->
+    <div class="label-group">
+      <label>2. Intervention timing</label>
+      <div class="radio-group" id="lg-timing">
+        ${radioOpt('timing','too_early','Too early',cur.timing)}
+        ${radioOpt('timing','about_right','About right',cur.timing)}
+        ${radioOpt('timing','too_late','Too late',cur.timing)}
+        ${radioOpt('timing','should_not','Should not have',cur.timing)}
+        ${radioOpt('timing','should_have','Should have but didn\'t',cur.timing)}
+      </div>
+    </div>
+
+    <!-- Label 3: Quality -->
+    <div class="label-group">
+      <label>3. Session quality for training</label>
+      <div class="radio-group" id="lg-quality">
+        ${radioOpt('quality','high','High value',cur.quality)}
+        ${radioOpt('quality','normal','Normal',cur.quality)}
+        ${radioOpt('quality','low','Low value',cur.quality)}
+        ${radioOpt('quality','skip','Skip',cur.quality)}
+      </div>
+    </div>
+
+    <!-- Label 4: Attribution -->
+    <div class="label-group">
+      <label>4. Outcome attribution</label>
+      <div class="radio-group" id="lg-attribution">
+        ${radioOpt('attribution','helped','Intervention helped',cur.attribution)}
+        ${radioOpt('attribution','irrelevant','Irrelevant',cur.attribution)}
+        ${radioOpt('attribution','hurt','Intervention hurt',cur.attribution)}
+        ${radioOpt('attribution','no_intervention','No intervention',cur.attribution)}
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="label-group">
+      <label>Notes</label>
+      <textarea class="label-notes" id="l-notes" placeholder="Optional notes...">${cur.notes||''}</textarea>
+    </div>
+  `;
+
+  // Auto-suggest quality
+  if (!cur.quality) {
+    const od = s.outcome_detail || {};
+    const hasTransition = (s.outcome_detail?.policy?.mode_history||[]).length > 1;
+    const hasResponse = od.intervention_accepted || od.intervention_closed;
+    if (hasTransition || hasResponse) {
+      document.querySelector('#lg-quality [data-val="high"]')?.click();
+    }
+  }
+
+  // Wire show/hide for wrong state
+  document.querySelectorAll('#lg-state .radio-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const val = opt.dataset.val;
+      document.getElementById('wrong-state-wrap').style.display = val === 'wrong' ? 'block' : 'none';
+    });
+  });
+
+  wireRadioGroups();
+}
+
+function radioOpt(group, val, label, selected) {
+  const isSel = selected === val;
+  return `<label class="radio-opt ${isSel?'selected':''}" data-group="${group}" data-val="${val}">
+    <input type="radio" name="${group}" value="${val}" ${isSel?'checked':''}> <span>${label}</span>
+  </label>`;
+}
+
+function wireRadioGroups() {
+  document.querySelectorAll('.radio-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const group = opt.dataset.group;
+      document.querySelectorAll(`[data-group="${group}"]`).forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      opt.querySelector('input[type=radio]').checked = true;
+    });
+  });
+}
+
+function collectLabels() {
+  const get = (name) => {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? el.value : null;
+  };
+  return {
+    state_correct: get('state_correct'),
+    correct_state: document.getElementById('l-correct-state')?.value || null,
+    timing:        get('timing'),
+    quality:       get('quality'),
+    attribution:   get('attribution'),
+    notes:         document.getElementById('l-notes')?.value?.trim() || '',
+    labeled_at:    new Date().toISOString(),
+  };
+}
+
+function saveCurrentLabels() {
+  if (selectedIdx < 0) return;
+  const s   = filteredSessions[selectedIdx];
+  const lab = collectLabels();
+  labels[s.session_id] = lab;
+  saveLabelsToStorage();
+  document.getElementById('save-status').textContent = '✓ Saved';
+  document.getElementById('save-status').style.color = 'var(--green)';
+  setTimeout(() => { document.getElementById('save-status').textContent = ''; }, 2000);
+  renderSessionList(); // refresh badges
+}
+
+// ══ Buttons ═════════════════════════════════════════════════════════════
+document.getElementById('load-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('load-btn');
+  btn.innerHTML = '<span class="spinner"></span> Loading…';
+  btn.disabled = true;
+  try {
+    allSessions = await fetchSessions();
+    applyFilters();
+  } catch (err) {
+    document.getElementById('session-list').innerHTML =
+      `<div style="padding:16px;color:var(--red)">Error: ${err.message}</div>`;
+  } finally {
+    btn.textContent = '↻ Load Sessions';
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('btn-save').addEventListener('click', () => saveCurrentLabels());
+
+document.getElementById('btn-save-next').addEventListener('click', () => {
+  saveCurrentLabels();
+  if (selectedIdx < filteredSessions.length - 1) selectSession(selectedIdx + 1);
+});
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  const labeledSessions = Object.entries(labels).map(([sid, lab]) => {
+    const s = allSessions.find(x => x.session_id === sid);
+    if (!s) return null;
+    const od = s.outcome_detail || {};
+    const pol = od.policy || {};
+    return {
+      session_id: sid,
+      features: pol.normalized_features || {},
+      derived: pol.derived_scores || {},
+      context: pol.context_metrics || {},
+      classified_state: pol.primary_state || s.classified_state,
+      classified_confidence: Number(pol.state_confidence || s.confidence || 0),
+      policy_action: pol.policy || s.classified_action,
+      outcome: s.outcome,
+      labels: lab,
+      page_context: pol.page_context || {},
+      reason_codes: pol.reason_codes || [],
+      mode_history: pol.mode_history || [],
+    };
+  }).filter(Boolean);
+
+  const payload = {
+    labeled_sessions: labeledSessions,
+    export_metadata: {
+      total_sessions: allSessions.length,
+      labeled_count: labeledSessions.length,
+      high_value_count: labeledSessions.filter(x => x.labels?.quality === 'high').length,
+      export_date: new Date().toISOString(),
+    }
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `emo_labeled_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+});
+
+// ── Filter change handlers ────────────────────────────────────────────
+['f-state','f-policy','f-outcome','f-minconf'].forEach(id => {
+  document.getElementById(id).addEventListener('change', applyFilters);
+});
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  // Ignore when typing in inputs
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+  if (e.key === 'ArrowDown') { e.preventDefault(); selectSession(selectedIdx + 1); return; }
+  if (e.key === 'ArrowUp')   { e.preventDefault(); selectSession(selectedIdx - 1); return; }
+  if (e.key === 'Enter')     { saveCurrentLabels(); if (selectedIdx < filteredSessions.length - 1) selectSession(selectedIdx + 1); return; }
+
+  // 1-3: quick-label state correctness
+  if (e.key === '1') document.querySelector('[data-group="state_correct"][data-val="correct"]')?.click();
+  if (e.key === '2') document.querySelector('[data-group="state_correct"][data-val="wrong"]')?.click();
+  if (e.key === '3') document.querySelector('[data-group="state_correct"][data-val="uncertain"]')?.click();
+  // 4-8: quick-label quality
+  if (e.key === '4') document.querySelector('[data-group="quality"][data-val="high"]')?.click();
+  if (e.key === '5') document.querySelector('[data-group="quality"][data-val="normal"]')?.click();
+  if (e.key === '6') document.querySelector('[data-group="quality"][data-val="skip"]')?.click();
+});
+
+// ── Auto-load on open ─────────────────────────────────────────────────
+document.getElementById('load-btn').click();
+</script>
+</body>
+</html>

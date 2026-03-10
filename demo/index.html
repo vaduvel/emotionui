@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmotionUI Demo — Sony WH-1000XM5</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --emo-bg: #ffffff;
+      --emo-bg-secondary: #f8f9fa;
+      --emo-text: #1a1a2e;
+      --emo-text-secondary: #6c757d;
+      --emo-accent: #4361ee;
+      --emo-accent-hover: #3a56d4;
+      --emo-border: #dee2e6;
+      --emo-radius: 8px;
+      --emo-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --emo-shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+      --emo-spacing: 1rem;
+      --emo-spacing-lg: 2rem;
+      --emo-font-size: 1rem;
+      --emo-font-size-lg: 1.25rem;
+      --emo-line-height: 1.6;
+      --emo-transition: 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+      --emo-cta-bg: #4361ee;
+      --emo-cta-text: #ffffff;
+      --emo-cta-size: 1rem;
+      --emo-cta-padding: 0.75rem 2rem;
+      --emo-cta-radius: 8px;
+      --emo-cta-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+      --emo-panel-opacity: 1;
+      --emo-layout-gap: 2rem;
+      --emo-highlight: transparent;
+      --emo-banner-bg: transparent;
+      --emo-banner-text: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: var(--emo-text);
+      line-height: var(--emo-line-height);
+      font-size: var(--emo-font-size);
+      transition: background var(--emo-transition), color var(--emo-transition);
+    }
+
+    .demo-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr 320px;
+      gap: 0;
+      min-height: 100vh;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    /* === LEFT PANEL: Signal Controls === */
+    .signal-panel {
+      background: #1a1a2e;
+      color: #e2e8f0;
+      padding: 20px;
+      overflow-y: auto;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+    }
+
+    .signal-panel h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .signal-group {
+      margin-bottom: 20px;
+    }
+
+    .signal-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+    }
+
+    .signal-name {
+      color: #cbd5e1;
+      flex: 1;
+    }
+
+    .signal-value {
+      font-weight: 700;
+      color: #f1f5f9;
+      min-width: 36px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .signal-btns {
+      display: flex;
+      gap: 4px;
+    }
+
+    .signal-btn {
+      width: 28px;
+      height: 28px;
+      border: 1px solid #475569;
+      background: #334155;
+      color: #e2e8f0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .signal-btn:hover { background: #475569; }
+    .signal-btn:active { background: #4361ee; border-color: #4361ee; }
+
+    .signal-toggle {
+      padding: 4px 10px;
+      border: 1px solid #475569;
+      background: #334155;
+      color: #e2e8f0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s;
+    }
+
+    .signal-toggle.active {
+      background: #4361ee;
+      border-color: #4361ee;
+    }
+
+    .scenarios { margin-top: 16px; }
+    .scenarios h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .scenario-btn {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      background: #16213e;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      text-align: left;
+      transition: all 0.15s;
+    }
+
+    .scenario-btn:hover { background: #1e3a5f; border-color: #4361ee; }
+
+    .scenario-tag {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-left: 6px;
+      font-weight: 600;
+    }
+
+    .reset-btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 12px;
+      background: #dc2626;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .reset-btn:hover { background: #b91c1c; }
+
+    /* === CENTER: Product Page === */
+    .product-container {
+      background: var(--emo-bg);
+      padding: var(--emo-spacing-lg);
+      transition: all var(--emo-transition);
+      min-height: 100vh;
+    }
+
+    #product-page {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .product-image {
+      background: var(--emo-bg-secondary);
+      border-radius: var(--emo-radius);
+      padding: 40px;
+      text-align: center;
+      margin-bottom: var(--emo-spacing-lg);
+      transition: all var(--emo-transition);
+    }
+
+    .product-image img {
+      max-width: 100%;
+      height: 280px;
+      object-fit: contain;
+    }
+
+    .product-image-placeholder {
+      height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 120px;
+      opacity: 0.3;
+    }
+
+    .product-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--emo-text);
+      margin-bottom: 8px;
+      transition: color var(--emo-transition);
+    }
+
+    .product-subtitle {
+      color: var(--emo-text-secondary);
+      margin-bottom: var(--emo-spacing-lg);
+      font-size: var(--emo-font-size);
+      transition: color var(--emo-transition);
+    }
+
+    .product-price {
+      margin-bottom: var(--emo-spacing);
+      transition: all var(--emo-transition);
+    }
+
+    .product-price .price-current {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--emo-text);
+      transition: color var(--emo-transition);
+    }
+
+    .product-price .price-old {
+      font-size: 1rem;
+      color: var(--emo-text-secondary);
+      text-decoration: line-through;
+      margin-left: 8px;
+    }
+
+    .product-cta {
+      margin: var(--emo-spacing-lg) 0;
+      transition: all var(--emo-transition);
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: var(--emo-cta-padding);
+      background: var(--emo-cta-bg);
+      color: var(--emo-cta-text);
+      border: none;
+      border-radius: var(--emo-cta-radius);
+      font-size: var(--emo-cta-size);
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--emo-cta-shadow);
+      transition: all var(--emo-transition);
+      font-family: inherit;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+
+    .product-specs {
+      margin: var(--emo-spacing-lg) 0;
+      transition: all var(--emo-transition);
+    }
+
+    .product-specs h3 {
+      font-size: var(--emo-font-size-lg);
+      margin-bottom: var(--emo-spacing);
+      color: var(--emo-text);
+      transition: color var(--emo-transition);
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .spec-item {
+      background: var(--emo-bg-secondary);
+      padding: 14px;
+      border-radius: var(--emo-radius);
+      transition: all var(--emo-transition);
+    }
+
+    .spec-label {
+      font-size: 12px;
+      color: var(--emo-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .spec-value {
+      font-weight: 600;
+      color: var(--emo-text);
+    }
+
+    .product-features {
+      margin: var(--emo-spacing-lg) 0;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--emo-bg-secondary);
+      border-radius: var(--emo-radius);
+      transition: all var(--emo-transition);
+    }
+
+    .feature-icon { font-size: 18px; flex-shrink: 0; }
+
+    .product-reviews-teaser {
+      margin-top: var(--emo-spacing-lg);
+      padding: var(--emo-spacing);
+      background: var(--emo-bg-secondary);
+      border-radius: var(--emo-radius);
+      transition: all var(--emo-transition);
+    }
+
+    .product-related, .product-upsells, .product-badges,
+    .product-urgency, .product-secondary-info {
+      transition: all var(--emo-transition);
+    }
+
+    .product-related {
+      margin-top: var(--emo-spacing-lg);
+      padding: var(--emo-spacing);
+      background: var(--emo-bg-secondary);
+      border-radius: var(--emo-radius);
+    }
+
+    /* === Adaptation Styles === */
+    .emo-adaptation {
+      animation: emo-fade-in 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+      margin: var(--emo-spacing) 0;
+    }
+
+    @keyframes emo-fade-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .emo-express-bar {
+      background: var(--emo-banner-bg);
+      color: var(--emo-banner-text);
+      padding: 14px 20px;
+      border-radius: var(--emo-radius);
+      font-weight: 500;
+    }
+
+    .emo-express-inner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .emo-express-icon { font-size: 20px; }
+
+    .emo-price-tools {
+      background: var(--emo-banner-bg);
+      padding: 16px 20px;
+      border-radius: var(--emo-radius);
+    }
+
+    .emo-price-breakdown { display: grid; gap: 10px; }
+
+    .emo-price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--emo-border);
+      font-size: 14px;
+    }
+
+    .emo-price-row:last-child { border-bottom: none; }
+
+    .emo-badge {
+      background: var(--emo-accent);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .emo-oxygen-msg, .emo-spotlight-guide, .emo-editorial-header {
+      background: var(--emo-banner-bg);
+      color: var(--emo-banner-text);
+      padding: 14px 20px;
+      border-radius: var(--emo-radius);
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .emo-trust-signals { display: grid; gap: 12px; }
+
+    .emo-trust-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      background: var(--emo-bg-secondary);
+      border-radius: var(--emo-radius);
+    }
+
+    .emo-trust-icon { font-size: 24px; }
+    .emo-trust-item strong { display: block; margin-bottom: 2px; }
+    .emo-trust-item p { font-size: 13px; color: var(--emo-text-secondary); }
+
+    .emo-research-panel {
+      background: var(--emo-bg-secondary);
+      padding: 20px;
+      border-radius: var(--emo-radius);
+    }
+
+    .emo-research-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--emo-text);
+    }
+
+    .emo-comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .emo-compare-card {
+      background: var(--emo-bg);
+      padding: 14px;
+      border-radius: var(--emo-radius);
+      border: 1px solid var(--emo-border);
+    }
+
+    .emo-compare-card strong { display: block; margin-bottom: 6px; }
+    .emo-compare-card p { font-size: 13px; color: var(--emo-text-secondary); margin-bottom: 8px; }
+
+    .emo-verdict {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .emo-win {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .emo-reassurance {
+      background: var(--emo-highlight);
+      padding: 16px;
+      border-radius: var(--emo-radius);
+    }
+
+    /* Body state classes — additional overrides */
+    body.emo-oxygen .product-container {
+      padding: 3rem 2rem;
+    }
+
+    body.emo-oxygen .spec-grid {
+      grid-template-columns: 1fr;
+    }
+
+    body.emo-spotlight .cta-button {
+      animation: emo-spotlight-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes emo-spotlight-pulse {
+      0%, 100% { box-shadow: var(--emo-cta-shadow); }
+      50% { box-shadow: 0 0 0 6px rgba(234, 88, 12, 0.15), var(--emo-cta-shadow); }
+    }
+
+    body.emo-editorial .product-container {
+      background: var(--emo-bg);
+    }
+
+    body.emo-editorial .product-title,
+    body.emo-editorial .spec-value,
+    body.emo-editorial .price-current {
+      color: var(--emo-text);
+    }
+
+    /* === RIGHT PANEL: Inspector === */
+    .inspector-panel {
+      background: #fafbfc;
+      border-left: 1px solid #e5e7eb;
+      padding: 20px;
+      overflow-y: auto;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      font-size: 13px;
+    }
+
+    .inspector-panel h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
+
+    .inspector-state {
+      padding: 16px;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 16px;
+    }
+
+    .inspector-state-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .inspector-state-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--emo-accent, #4361ee);
+    }
+
+    .inspector-state-desc {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .inspector-confidence {
+      margin-top: 12px;
+    }
+
+    .confidence-bar {
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      background: var(--emo-accent, #4361ee);
+      border-radius: 3px;
+      transition: width 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .inspector-matches {
+      margin-top: 16px;
+    }
+
+    .match-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 12px;
+    }
+
+    .match-rule { color: #374151; font-weight: 500; }
+    .match-weight { color: #9ca3af; font-variant-numeric: tabular-nums; }
+
+    .inspector-json {
+      margin-top: 16px;
+    }
+
+    .inspector-json pre {
+      background: #1a1a2e;
+      color: #a5b4fc;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 11px;
+      overflow-x: auto;
+      line-height: 1.5;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .inspector-rules {
+      margin-top: 16px;
+    }
+
+    .rule-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .rule-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .rule-id { font-weight: 600; font-size: 11px; color: #6b7280; }
+
+    .rule-status {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+
+    .rule-active {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .rule-inactive {
+      background: #f3f4f6;
+      color: #9ca3af;
+    }
+
+    .rule-state { font-size: 12px; color: #374151; margin-top: 2px; }
+
+    /* emo-editorial dark inspector override */
+    body.emo-editorial .inspector-panel {
+      background: #0f172a;
+      border-left-color: #1e293b;
+      color: #e2e8f0;
+    }
+
+    body.emo-editorial .inspector-state {
+      background: #1e293b;
+      border-color: #334155;
+    }
+
+    body.emo-editorial .inspector-state-label { color: #64748b; }
+    body.emo-editorial .inspector-state-desc { color: #94a3b8; }
+    body.emo-editorial .match-item { border-color: #1e293b; }
+    body.emo-editorial .match-rule { color: #e2e8f0; }
+    body.emo-editorial .rule-item { border-color: #1e293b; }
+    body.emo-editorial .rule-id { color: #94a3b8; }
+    body.emo-editorial .rule-state { color: #cbd5e1; }
+    body.emo-editorial .inspector-panel h2 { color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="demo-layout">
+
+    <!-- LEFT PANEL: Signal Controls -->
+    <div class="signal-panel">
+      <h2>Layer 1 — Signals</h2>
+
+      <div class="signal-group" id="signal-controls">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="scenarios">
+        <h3>Quick Scenarios</h3>
+        <button class="scenario-btn" data-scenario="frustrated">
+          Frustrated User <span class="scenario-tag" style="background:#fecaca;color:#991b1b">Rage</span>
+        </button>
+        <button class="scenario-btn" data-scenario="price-sensitive">
+          Price Sensitive <span class="scenario-tag" style="background:#fef3c7;color:#92400e">$$</span>
+        </button>
+        <button class="scenario-btn" data-scenario="hesitant">
+          Hesitant Buyer <span class="scenario-tag" style="background:#cffafe;color:#155e75">Exit</span>
+        </button>
+        <button class="scenario-btn" data-scenario="researcher">
+          Deep Researcher <span class="scenario-tag" style="background:#ede9fe;color:#5b21b6">Spec</span>
+        </button>
+        <button class="scenario-btn" data-scenario="confused">
+          Confused User <span class="scenario-tag" style="background:#ffedd5;color:#9a3412">Lost</span>
+        </button>
+        <button class="scenario-btn" data-scenario="express">
+          Express Buyer <span class="scenario-tag" style="background:#dcfce7;color:#166534">Fast</span>
+        </button>
+        <button class="scenario-btn" data-scenario="night">
+          Night Browser <span class="scenario-tag" style="background:#e0e7ff;color:#3730a3">Dark</span>
+        </button>
+        <button class="scenario-btn" data-scenario="neutral">
+          Neutral / New <span class="scenario-tag" style="background:#f3f4f6;color:#6b7280">Base</span>
+        </button>
+      </div>
+
+      <button class="reset-btn" id="reset-all">Reset All Signals</button>
+    </div>
+
+    <!-- CENTER: Product Page -->
+    <div class="product-container">
+      <div id="product-page">
+        <div class="product-image">
+          <div class="product-image-placeholder">🎧</div>
+        </div>
+
+        <h1 class="product-title">Sony WH-1000XM5</h1>
+        <p class="product-subtitle">Industry-leading noise cancellation with Auto NC Optimizer, crystal-clear hands-free calling, and up to 30-hour battery life.</p>
+
+        <div class="product-price" data-emotion-track="price">
+          <span class="price-current">1.299 lei</span>
+          <span class="price-old">1.499 lei</span>
+        </div>
+
+        <!-- CTA -->
+        <div class="product-cta">
+          <button class="cta-button" id="add-to-cart">
+            <span>Add to Cart</span>
+          </button>
+        </div>
+
+        <!-- Specs -->
+        <div class="product-specs" data-emotion-track="spec">
+          <h3>Specifications</h3>
+          <div class="spec-grid">
+            <div class="spec-item">
+              <div class="spec-label">Driver</div>
+              <div class="spec-value">30mm Carbon Fiber</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-label">ANC</div>
+              <div class="spec-value">HD Noise Cancelling (QN1)</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-label">Battery</div>
+              <div class="spec-value">30 hours (ANC on)</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-label">Weight</div>
+              <div class="spec-value">250g</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-label">Bluetooth</div>
+              <div class="spec-value">5.2, LDAC, AAC</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-label">Charging</div>
+              <div class="spec-value">USB-C, 3min → 3hrs</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Features -->
+        <div class="product-features" data-emotion-track="features">
+          <ul class="feature-list">
+            <li>
+              <span class="feature-icon">🔇</span>
+              <div><strong>Best-in-class ANC</strong> — Two processors control 8 microphones for unprecedented noise cancellation.</div>
+            </li>
+            <li>
+              <span class="feature-icon">🎵</span>
+              <div><strong>Exceptional sound</strong> — Newly designed 30mm driver unit delivers a wider frequency range.</div>
+            </li>
+            <li>
+              <span class="feature-icon">📞</span>
+              <div><strong>Crystal clear calls</strong> — 4 beamforming microphones with AI-based noise reduction.</div>
+            </li>
+            <li>
+              <span class="feature-icon">🔋</span>
+              <div><strong>All-day battery</strong> — 30 hours with ANC. Quick charge: 3 min = 3 hours playback.</div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Reviews teaser -->
+        <div class="product-reviews-teaser" data-emotion-track="reviews">
+          <strong>Customer Reviews</strong> — 4.8/5 from 2,847 reviews
+        </div>
+
+        <!-- Related -->
+        <div class="product-related">
+          <strong>You might also like</strong>
+          <p style="color: var(--emo-text-secondary); margin-top: 8px;">Sony WF-1000XM5 Earbuds · Sony WH-1000XM4 · Bose QC Ultra</p>
+        </div>
+
+        <!-- Hidden by default, shown by adaptations -->
+        <div class="product-upsells" style="display:none;">
+          <p>Bundle: Add Sony WF-1000XM5 earbuds for 899 lei</p>
+        </div>
+        <div class="product-social-proof" style="display:none;">
+          <p>2,847 people bought this last month</p>
+        </div>
+        <div class="product-price-history" style="display:none;">
+          <p>Price trend: Lowest in 60 days</p>
+        </div>
+        <div class="product-full-specs" style="display:none;">
+          <p>Full specification sheet available</p>
+        </div>
+        <div class="product-express-checkout" style="display:none;">
+          <p>Express: Ship to saved address</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Inspector -->
+    <div class="inspector-panel">
+      <h2>Inspector</h2>
+
+      <div class="inspector-state">
+        <div class="inspector-state-label">Current State</div>
+        <div class="inspector-state-value" id="inspector-state">STANDARD</div>
+        <div class="inspector-state-desc" id="inspector-desc">No strong emotional signal detected</div>
+
+        <div class="inspector-confidence">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#9ca3af;">
+            <span>Confidence</span>
+            <span id="inspector-confidence-val">0%</span>
+          </div>
+          <div class="confidence-bar">
+            <div class="confidence-fill" id="inspector-confidence-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="inspector-matches">
+        <h2>Matched Rules</h2>
+        <div id="inspector-matches-list">
+          <div style="color:#9ca3af;font-size:12px;">No rules matched</div>
+        </div>
+      </div>
+
+      <div class="inspector-rules">
+        <h2>All Rules</h2>
+        <div id="inspector-rules-list"></div>
+      </div>
+
+      <div class="inspector-json">
+        <h2>Payload</h2>
+        <pre id="inspector-json">{}</pre>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Sensory } from '../sdk/src/sensory.js';
+    import { EmotionEngine } from '../sdk/src/engine.js';
+    import { DesignTokens } from '../sdk/src/tokens.js';
+    import { AdaptiveLayout } from '../sdk/src/layout.js';
+    import { URWidget } from '../sdk/src/ur.js';
+
+    // ——— Init layers ———
+    const sensory = new Sensory();
+    const engine = new EmotionEngine();
+    const tokens = new DesignTokens();
+    const layout = new AdaptiveLayout(document.getElementById('product-page'));
+    const ur = new URWidget();
+
+    tokens.apply('STANDARD');
+
+    ur.init({
+      onReset: () => {
+        sensory.reset();
+        engine.reset();
+        tokens.apply('STANDARD');
+        layout.apply('STANDARD');
+        ur.hide();
+        updateInspector({ state: 'STANDARD', label: 'Standard', confidence: 0, description: 'No strong emotional signal detected', allMatches: [] });
+        updateSignalPanel();
+      },
+      onDetails: () => {
+        console.log('EmotionUI State:', sensory.signals, engine.getState());
+      },
+    });
+
+    // ——— Signal definitions ———
+    const SIGNAL_DEFS = [
+      { key: 'rage_clicks', label: 'Rage Clicks', type: 'int' },
+      { key: 'mouse_jitter', label: 'Mouse Jitter', type: 'float' },
+      { key: 'exit_intent', label: 'Exit Intent', type: 'int' },
+      { key: 'dwell_events', label: 'Dwell Events', type: 'int' },
+      { key: 'scroll_thrash', label: 'Scroll Thrash', type: 'float' },
+      { key: 'dead_clicks', label: 'Dead Clicks', type: 'int' },
+      { key: 'product_views', label: 'Product Views', type: 'int' },
+      { key: 'spec_dwell', label: 'Spec Dwell', type: 'int' },
+      { key: 'cart_add_remove', label: 'Cart Add/Remove', type: 'float' },
+      { key: 'price_hover', label: 'Price Hover', type: 'int' },
+      { key: 'total_visits', label: 'Total Visits', type: 'int' },
+      { key: 'cart_abandons', label: 'Cart Abandons', type: 'int' },
+      { key: 'hour', label: 'Hour', type: 'int' },
+      { key: 'direct_checkout', label: 'Direct Checkout', type: 'bool' },
+      { key: 'mobile', label: 'Mobile', type: 'bool' },
+    ];
+
+    // ——— Build signal panel ———
+    const signalContainer = document.getElementById('signal-controls');
+
+    function buildSignalPanel() {
+      signalContainer.innerHTML = '';
+      SIGNAL_DEFS.forEach(def => {
+        const row = document.createElement('div');
+        row.className = 'signal-row';
+
+        if (def.type === 'bool') {
+          row.innerHTML = `
+            <span class="signal-name">${def.label}</span>
+            <button class="signal-toggle ${sensory.signals[def.key] ? 'active' : ''}" data-key="${def.key}">
+              ${sensory.signals[def.key] ? 'ON' : 'OFF'}
+            </button>
+          `;
+          row.querySelector('.signal-toggle').addEventListener('click', (e) => {
+            sensory.toggleSignal(def.key);
+            reclassify();
+          });
+        } else {
+          row.innerHTML = `
+            <span class="signal-name">${def.label}</span>
+            <span class="signal-value" id="sig-${def.key}">${formatVal(sensory.signals[def.key])}</span>
+            <div class="signal-btns">
+              <button class="signal-btn" data-key="${def.key}" data-delta="-1">−</button>
+              <button class="signal-btn" data-key="${def.key}" data-delta="1">+</button>
+            </div>
+          `;
+          row.querySelectorAll('.signal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const delta = parseFloat(btn.dataset.delta);
+              sensory.incrementSignal(def.key, def.type === 'float' ? delta * 0.5 : delta);
+              reclassify();
+            });
+          });
+        }
+
+        signalContainer.appendChild(row);
+      });
+    }
+
+    function formatVal(v) {
+      if (typeof v === 'boolean') return v ? 'ON' : 'OFF';
+      if (typeof v === 'number' && !Number.isInteger(v)) return v.toFixed(1);
+      return v;
+    }
+
+    function updateSignalPanel() {
+      SIGNAL_DEFS.forEach(def => {
+        if (def.type === 'bool') {
+          const toggle = signalContainer.querySelector(`[data-key="${def.key}"]`);
+          if (toggle) {
+            toggle.classList.toggle('active', sensory.signals[def.key]);
+            toggle.textContent = sensory.signals[def.key] ? 'ON' : 'OFF';
+          }
+        } else {
+          const el = document.getElementById(`sig-${def.key}`);
+          if (el) el.textContent = formatVal(sensory.signals[def.key]);
+        }
+      });
+    }
+
+    // ——— Classification & update ———
+    function reclassify() {
+      const result = engine.classify(sensory.signals);
+      tokens.apply(result.state);
+      layout.apply(result.state);
+      ur.update(result);
+      updateInspector(result);
+      updateSignalPanel();
+    }
+
+    function updateInspector(result) {
+      document.getElementById('inspector-state').textContent = result.state || 'STANDARD';
+      document.getElementById('inspector-desc').textContent = result.description || '';
+      document.getElementById('inspector-confidence-val').textContent = ((result.confidence || 0) * 100).toFixed(0) + '%';
+      document.getElementById('inspector-confidence-bar').style.width = ((result.confidence || 0) * 100) + '%';
+
+      // Matched rules
+      const matchesList = document.getElementById('inspector-matches-list');
+      if (result.allMatches && result.allMatches.length > 0) {
+        matchesList.innerHTML = result.allMatches.map(m => `
+          <div class="match-item">
+            <span class="match-rule">${m.ruleId} → ${m.state}</span>
+            <span class="match-weight">${(m.weight * 100).toFixed(0)}%</span>
+          </div>
+        `).join('');
+      } else {
+        matchesList.innerHTML = '<div style="color:#9ca3af;font-size:12px;">No rules matched</div>';
+      }
+
+      // All rules status
+      const rulesList = document.getElementById('inspector-rules-list');
+      const rules = engine.getRules();
+      const activeIds = (result.allMatches || []).map(m => m.ruleId);
+      rulesList.innerHTML = rules.map(r => `
+        <div class="rule-item">
+          <div class="rule-header">
+            <span class="rule-id">${r.id}</span>
+            <span class="rule-status ${activeIds.includes(r.id) ? 'rule-active' : 'rule-inactive'}">
+              ${activeIds.includes(r.id) ? 'MATCHED' : 'inactive'}
+            </span>
+          </div>
+          <div class="rule-state">${r.state} (${(r.weight * 100).toFixed(0)}%)</div>
+        </div>
+      `).join('');
+
+      // JSON payload
+      document.getElementById('inspector-json').textContent = JSON.stringify({
+        signals: sensory.signals,
+        classification: {
+          state: result.state,
+          action: result.action,
+          confidence: result.confidence,
+          ruleId: result.ruleId,
+        },
+      }, null, 2);
+    }
+
+    // ——— Scenarios ———
+    const SCENARIOS = {
+      frustrated: { rage_clicks: 5, mouse_jitter: 6, scroll_thrash: 4, dead_clicks: 2, exit_intent: 1 },
+      'price-sensitive': { price_hover: 3, cart_abandons: 3, total_visits: 4, cart_add_remove: 2 },
+      hesitant: { exit_intent: 3, cart_abandons: 2, price_hover: 2, total_visits: 2 },
+      researcher: { spec_dwell: 5, product_views: 6, dwell_events: 3 },
+      confused: { dwell_events: 6, dead_clicks: 4, scroll_thrash: 2 },
+      express: { direct_checkout: true, total_visits: 3 },
+      night: { hour: 22, mobile: true, total_visits: 1 },
+      neutral: {},
+    };
+
+    document.querySelectorAll('.scenario-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sensory.reset();
+        const scenario = SCENARIOS[btn.dataset.scenario];
+        if (scenario) {
+          Object.entries(scenario).forEach(([key, value]) => {
+            sensory.setSignal(key, value);
+          });
+        }
+        reclassify();
+      });
+    });
+
+    // ——— Reset ———
+    document.getElementById('reset-all').addEventListener('click', () => {
+      sensory.reset();
+      engine.reset();
+      tokens.apply('STANDARD');
+      layout.apply('STANDARD');
+      ur.hide();
+      updateInspector({ state: 'STANDARD', label: 'Standard', confidence: 0, description: 'No strong emotional signal detected', allMatches: [] });
+      updateSignalPanel();
+    });
+
+    // ——— Session tracking (real events) ———
+    const productPage = document.querySelector('.product-container');
+    sensory.bind(productPage);
+
+    sensory.onSignalChange((signals, event) => {
+      if (event === 'session_end') {
+        sendSessionToSupabase();
+        return;
+      }
+      reclassify();
+    });
+
+    async function sendSessionToSupabase() {
+      const supabaseUrl = 'https://tmhymprkpbxvqhxofxvy.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtaHltcHJrcGJ4dnFoeG9meHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NTY3MzQsImV4cCI6MjA4ODEzMjczNH0.yoL-3aCD2iTBRnmFwZQG5LDe0to7WBbGYBCcnYXcjvI';
+      if (!supabaseUrl || !supabaseKey) return;
+
+      const signals = sensory.signals;
+      const classification = engine.getState();
+
+      try {
+        await fetch(`${supabaseUrl}/rest/v1/sessions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({
+            session_id: 'emo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
+            product_id: 'sony-wh1000xm5',
+            ...signals,
+            time_on_page_sec: Math.round((Date.now() - performance.timing.navigationStart) / 1000),
+            classified_state: classification?.state || 'STANDARD',
+            classified_action: classification?.action || 'default',
+            confidence: classification?.confidence || 0,
+            user_agent: navigator.userAgent,
+            screen_width: window.innerWidth,
+          }),
+        });
+      } catch (e) {
+        console.warn('EmotionUI: Failed to save session', e);
+      }
+    }
+
+    window.addEventListener('beforeunload', sendSessionToSupabase);
+
+    // ——— Init ———
+    buildSignalPanel();
+    updateInspector({ state: 'STANDARD', label: 'Standard', confidence: 0, description: 'No strong emotional signal detected', allMatches: [] });
+  </script>
+</body>
+</html>

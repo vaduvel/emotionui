@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Adaptive State Tracker</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; width: 320px; margin: 0; padding: 12px; background: #f7f8fb; color: #1b1f2a; }
+    h1 { font-size: 15px; margin: 0 0 10px; }
+    .row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
+    .card { background: #fff; border: 1px solid #e5e8ef; border-radius: 10px; padding: 10px; }
+    .label { color: #5f6780; font-size: 12px; }
+    .value { font-weight: 600; font-size: 13px; }
+    .value.small { font-size: 11px; max-width: 180px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .scores { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    button { width: 100%; border: 0; border-radius: 8px; padding: 9px 10px; font-weight: 600; cursor: pointer; }
+    #toggleBtn { background: #2d6cdf; color: white; margin-bottom: 8px; }
+    #openLivePanelBtn { background: #0f766e; color: white; margin-bottom: 8px; }
+    #resetModeBtn { background: #334155; color: white; margin-bottom: 8px; }
+    #resetModelBtn { background: #7c2d12; color: white; margin-bottom: 8px; }
+    #cleanStartBtn { background: #166534; color: white; margin-bottom: 8px; }
+    #wearableBtn { background: #111827; color: white; }
+    #status { margin-top: 8px; font-size: 12px; color: #5f6780; min-height: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Adaptive State Tracker</h1>
+  <button id="toggleBtn">Loading...</button>
+  <button id="openLivePanelBtn">Open Live Panel</button>
+  <button id="resetModeBtn">Reset current mode</button>
+  <button id="resetModelBtn">Reset learning model</button>
+  <button id="cleanStartBtn">Clean start training</button>
+
+  <div class="card">
+    <div class="row"><span class="label">Rage clicks</span><span class="value" id="rageClicks">-</span></div>
+    <div class="row"><span class="label">ML State</span><span class="value" id="mlState">-</span></div>
+    <div class="row"><span class="label">State label</span><span class="value" id="stateLabel">-</span></div>
+    <div class="row"><span class="label">Affect tag</span><span class="value" id="emotionTag">-</span></div>
+    <div class="row"><span class="label">Intent tag</span><span class="value" id="intentTag">-</span></div>
+    <div class="row"><span class="label">Constraints</span><span class="value small" id="constraintTags">none</span></div>
+    <div class="row"><span class="label">Reason codes</span><span class="value small" id="reasonCodes">none</span></div>
+    <div class="row"><span class="label">Previous state</span><span class="value" id="previousState">-</span></div>
+    <div class="row"><span class="label">Resolved UI Mode</span><span class="value" id="resolvedMode">-</span></div>
+    <div class="row"><span class="label">Intervention type</span><span class="value" id="interventionType">-</span></div>
+    <div class="row"><span class="label">Previous mode</span><span class="value" id="previousMode">-</span></div>
+    <div class="row"><span class="label">Resolved reason</span><span class="value small" id="resolvedReason">none</span></div>
+    <div class="row"><span class="label">Override reason</span><span class="value small" id="overrideReason">none</span></div>
+    <div class="row"><span class="label">Funnel stage</span><span class="value" id="funnel">-</span></div>
+    <div class="row"><span class="label">ML source</span><span class="value" id="mlSource">-</span></div>
+    <div class="row"><span class="label">ML samples</span><span class="value" id="mlSamples">0</span></div>
+    <div class="row"><span class="label">Abstain gate</span><span class="value" id="mlAbstain">No</span></div>
+    <div class="row"><span class="label">Baseline</span><span class="value" id="baseline">Fallback</span></div>
+    <div class="row"><span class="label">Gate reason</span><span class="value small" id="gateReason">none</span></div>
+    <div class="row"><span class="label">PDP gate</span><span class="value" id="pdpGate">-</span></div>
+    <div class="row"><span class="label">PDP score</span><span class="value" id="pdpScore">0</span></div>
+    <div class="row"><span class="label">Suppressed</span><span class="value small" id="suppressedModes">none</span></div>
+    <div class="row"><span class="label">Scores (F/H/R/P)</span><span class="value scores" id="scores">0/0/0/0</span></div>
+    <div class="row"><span class="label">Training run</span><span class="value small" id="trainingRun">-</span></div>
+    <div class="row"><span class="label">Run started</span><span class="value small" id="trainingStarted">-</span></div>
+    <div class="row"><span class="label">Info zones touched</span><span class="value" id="infoZoneUnique">0</span></div>
+    <div class="row"><span class="label">Info zone dwell</span><span class="value" id="infoZoneDwell">0</span></div>
+    <div class="row"><span class="label">Revisit intent</span><span class="value" id="revisitIntent">0</span></div>
+    <div class="row"><span class="label">Chaotic bursts</span><span class="value" id="chaoticBursts">0</span></div>
+    <div class="row"><span class="label">Reversal+dwell ratio</span><span class="value" id="reversalDwellRatio">0</span></div>
+    <div class="row"><span class="label">Page density</span><span class="value" id="pageDensity">0</span></div>
+    <div class="row"><span class="label">Active section</span><span class="value" id="activeSection">-</span></div>
+    <div class="row"><span class="label">UI contamination</span><span class="value" id="uiContamination">No</span></div>
+    <div class="row"><span class="label">Cooldown</span><span class="value" id="cooldown">No</span></div>
+    <div class="row"><span class="label">Exposure delay</span><span class="value" id="exposureDelay">0 ms</span></div>
+    <div class="row"><span class="label">Reward window</span><span class="value" id="rewardWindow">0 ms</span></div>
+    <div class="row"><span class="label">Biometric inputs</span><span class="value" id="wearable">Disabled</span></div>
+  </div>
+
+  <div style="margin-top: 10px;">
+    <button id="wearableBtn">Biometric inputs disabled</button>
+    <div id="status"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
