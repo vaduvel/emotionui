@@ -244,6 +244,11 @@
       </div>
     </div>
 
+    <div class="chart-card" style="margin-bottom: 24px;">
+      <div class="chart-title">Experiment Variant Performance</div>
+      <div class="bar-chart" id="experiment-chart"></div>
+    </div>
+
     <div class="table-card">
       <div class="table-header">Last 20 Sessions</div>
       <div id="sessions-table">
@@ -273,6 +278,24 @@
       saved: 'badge-saved',
       left: 'badge-left',
     };
+
+    const EXPERIMENT_COLORS = {
+      adaptive: '#2563eb',
+      control: '#6b7280',
+      challenger_shadow: '#7c3aed',
+    };
+
+    function getPolicyDebug(session) {
+      return session?.outcome_detail?.policy || {};
+    }
+
+    function getExperimentVariant(session) {
+      return getPolicyDebug(session).experiment_variant || 'adaptive';
+    }
+
+    function getExperimentRuntimeMode(session) {
+      return getPolicyDebug(session).experiment_runtime_mode || 'adaptive';
+    }
 
     document.getElementById('load-btn').addEventListener('click', loadSessions);
 
@@ -376,6 +399,41 @@
           `;
         }).join('');
 
+      // Experiment variant chart
+      const experimentSummary = {};
+      sessions.forEach(s => {
+        const variant = getExperimentVariant(s);
+        const runtime = getExperimentRuntimeMode(s);
+        if (!experimentSummary[variant]) {
+          experimentSummary[variant] = {
+            total: 0,
+            purchased: 0,
+            runtime
+          };
+        }
+        experimentSummary[variant].total += 1;
+        if (s.outcome === 'purchased') experimentSummary[variant].purchased += 1;
+      });
+
+      const experimentChart = document.getElementById('experiment-chart');
+      const experimentMax = Math.max(...Object.values(experimentSummary).map(v => v.total), 1);
+      experimentChart.innerHTML = Object.entries(experimentSummary)
+        .sort((a, b) => b[1].total - a[1].total)
+        .map(([variant, stats]) => {
+          const purchaseRate = stats.total > 0 ? ((stats.purchased / stats.total) * 100).toFixed(1) : '0.0';
+          return `
+            <div class="bar-row">
+              <span class="bar-label">${variant} (${stats.runtime})</span>
+              <div class="bar-track">
+                <div class="bar-fill" style="width:${(stats.total / experimentMax) * 100}%;background:${EXPERIMENT_COLORS[variant] || '#64748b'}">
+                  ${stats.total} sessions
+                </div>
+              </div>
+              <span class="bar-count">${purchaseRate}%</span>
+            </div>
+          `;
+        }).join('');
+
       // Sessions table
       const recent = sessions.slice(0, 20);
       const tableDiv = document.getElementById('sessions-table');
@@ -391,6 +449,7 @@
             <tr>
               <th>Time</th>
               <th>State</th>
+              <th>Experiment</th>
               <th>Confidence</th>
               <th>Outcome</th>
               <th>Time on Page</th>
@@ -403,6 +462,7 @@
               <tr>
                 <td>${new Date(s.created_at).toLocaleString()}</td>
                 <td style="color:${STATE_COLORS[s.classified_state] || '#94a3b8'};font-weight:600">${s.classified_state || 'STANDARD'}</td>
+                <td>${getExperimentVariant(s)}<br><span style="color:#9ca3af;font-size:11px">${getExperimentRuntimeMode(s)}</span></td>
                 <td>${s.confidence ? (s.confidence * 100).toFixed(0) + '%' : '—'}</td>
                 <td><span class="badge ${OUTCOME_BADGES[s.outcome] || 'badge-left'}">${s.outcome || '—'}</span></td>
                 <td>${s.time_on_page_sec ? s.time_on_page_sec + 's' : '—'}</td>
