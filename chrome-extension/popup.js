@@ -36,6 +36,12 @@ function setStats(stats) {
   document.getElementById("overrideReason").textContent = stats?.override_reason || "none";
   document.getElementById("funnel").textContent = stats?.funnel_stage || "-";
   document.getElementById("mlSource").textContent = stats?.ml_source || "-";
+  document.getElementById("experimentVariant").textContent = stats?.experiment_variant
+    ? `${stats.experiment_variant} (${stats?.experiment_runtime_mode || "adaptive"})`
+    : "-";
+  document.getElementById("challengerPolicy").textContent = stats?.challenger_policy
+    ? `${stats.challenger_policy} (${stats?.challenger_source || "shadow"})`
+    : "none";
   document.getElementById("mlSamples").textContent = String(stats?.ml_samples ?? 0);
   document.getElementById("mlAbstain").textContent = stats?.ml_abstained ? "Yes" : "No";
   document.getElementById("baseline").textContent = stats?.baseline_active ? "Active" : "Fallback";

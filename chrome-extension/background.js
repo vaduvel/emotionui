@@ -27,10 +27,17 @@ const CONFIG = {
     configVersion: "2026-03-10",
     salt: "emotionui_policy_runtime_v1",
     variants: [
-      { key: "adaptive", weight: 1, runtime: "adaptive" },
-      { key: "control", weight: 0, runtime: "control" },
-      { key: "challenger_shadow", weight: 0, runtime: "adaptive_shadow" }
+      { key: "adaptive", weight: 0.8, runtime: "adaptive" },
+      { key: "control", weight: 0.15, runtime: "control" },
+      { key: "challenger_shadow", weight: 0.05, runtime: "adaptive_shadow" }
     ]
+  },
+  challenger: {
+    enabled: true,
+    key: "simplebandit_shadow_v1",
+    softmaxTemperature: 0.95,
+    minConfidenceObserve: 0.34,
+    minConfidenceIntervene: 0.46
   },
   rewards: {
     wishlist: 0.1,
@@ -301,6 +308,88 @@ function applyExperimentDecision(baseDecision, experiment = {}) {
       INTERVENE: 0
     }
   };
+}
+
+class ChallengerPolicy {
+  static decide(rawFeatures = {}, decisionContext = {}, config = CONFIG.challenger) {
+    const x = PolicyModel.normalizeFeatures(rawFeatures || {});
+    const stateLabel = String(decisionContext?.stateLabel || decisionContext?.primaryState || DEFAULT_CANONICAL_STATE).toUpperCase();
+    const distressState = /^(FRUSTRATED|OVERLOADED)$/.test(stateLabel) ? 1 : 0;
+    const commerceState = /^(DECISION_READY|PRICE_SENSITIVE|REASSURANCE_SEEKING)$/.test(stateLabel) ? 1 : 0;
+    const researchState = /^(DEEP_RESEARCH|EXPLORING)$/.test(stateLabel) ? 1 : 0;
+
+    const logits = {
+      SILENT:
+        0.34 * (1 - x.bounceRisk) +
+        0.20 * (1 - x.rageClicks) +
+        0.18 * (1 - x.deadClickRate) +
+        0.14 * (1 - x.exitIntentSignal) +
+        0.14 * (1 - x.checkoutSignal),
+      OBSERVE:
+        0.30 * x.researchCoverage +
+        0.18 * x.reviewFocusRatio +
+        0.16 * x.specFocusRatio +
+        0.12 * x.priceHoverSignal +
+        0.08 * x.cartIntentSignal +
+        0.06 * x.exitIntentSignal +
+        0.10 * researchState -
+        0.10 * x.interventionClosed,
+      INTERVENE:
+        0.22 * x.checkoutSignal +
+        0.16 * x.cartIntentSignal +
+        0.14 * x.exitIntentSignal +
+        0.12 * x.cartAbandonSignal +
+        0.10 * x.rageClicks +
+        0.10 * x.deadClickRate +
+        0.08 * x.mouseJitter +
+        0.06 * commerceState +
+        0.08 * distressState -
+        0.12 * x.interventionClosed -
+        0.06 * x.bounceRisk
+    };
+
+    const probs = PolicyModel.softmax(logits, Number(config?.softmaxTemperature || 0.95));
+    const ranked = Object.entries(probs).sort((a, b) => b[1] - a[1]);
+    let policy = ranked[0]?.[0] || "SILENT";
+    let confidence = Number(ranked[0]?.[1] || 0);
+    let reason = "challenger_argmax";
+
+    if (policy === "INTERVENE" && confidence < Number(config?.minConfidenceIntervene || 0.46)) {
+      policy = "OBSERVE";
+      confidence = Number(probs[policy] || confidence || 0);
+      reason = "challenger_intervene_downgraded_to_observe";
+    }
+
+    if (policy === "OBSERVE" && confidence < Number(config?.minConfidenceObserve || 0.34)) {
+      policy = "SILENT";
+      confidence = Number(probs[policy] || confidence || 0);
+      reason = "challenger_observe_downgraded_to_silent";
+    }
+
+    if (policy === "INTERVENE") {
+      if (x.checkoutSignal >= 0.45 || x.cartIntentSignal >= 0.45) {
+        reason = "challenger_commerce_pressure";
+      } else if (x.rageClicks >= 0.35 || x.deadClickRate >= 0.3 || x.mouseJitter >= 0.3) {
+        reason = "challenger_distress_relief";
+      }
+    } else if (policy === "OBSERVE") {
+      if (x.researchCoverage >= 0.3 || x.reviewFocusRatio >= 0.3 || x.specFocusRatio >= 0.3) {
+        reason = "challenger_research_guidance";
+      } else if (x.priceHoverSignal >= 0.35 || x.exitIntentSignal >= 0.35) {
+        reason = "challenger_hesitation_guidance";
+      }
+    } else if (researchState || x.bounceRisk >= 0.85) {
+      reason = "challenger_low_signal_silent";
+    }
+
+    return {
+      policy,
+      confidence: Number(confidence.toFixed(4)),
+      reason,
+      source: String(config?.key || "simplebandit_shadow_v1"),
+      policy_probs: probs
+    };
+  }
 }
 
 class PolicyModel {
@@ -833,9 +922,15 @@ runtimeApi.onMessage.addListener((message, sender, sendResponse) => {
     getPolicyModel().then((model) => {
       const baseDecision = PolicyModel.decide(model, message.features || {}, CONFIG.policy, message.context || {});
       const experiment = assignExperimentVariant(message.context || {}, CONFIG.experiment);
+      const challenger = ChallengerPolicy.decide(message.features || {}, message.context || {}, CONFIG.challenger);
       const decision = applyExperimentDecision(baseDecision, experiment);
       sendResponse({
         ...decision,
+        challenger_policy: challenger.policy,
+        challenger_confidence: challenger.confidence,
+        challenger_reason: challenger.reason,
+        challenger_source: challenger.source,
+        challenger_policy_probs: challenger.policy_probs,
         model_version: model.version || 2,
         trained_samples: model.trained_samples || 0
       });

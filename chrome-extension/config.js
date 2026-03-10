@@ -98,10 +98,17 @@
       configVersion: "2026-03-10",
       salt: "emotionui_policy_runtime_v1",
       variants: [
-        { key: "adaptive", weight: 1, runtime: "adaptive" },
-        { key: "control", weight: 0, runtime: "control" },
-        { key: "challenger_shadow", weight: 0, runtime: "adaptive_shadow" }
+        { key: "adaptive", weight: 0.8, runtime: "adaptive" },
+        { key: "control", weight: 0.15, runtime: "control" },
+        { key: "challenger_shadow", weight: 0.05, runtime: "adaptive_shadow" }
       ]
+    },
+    challenger: {
+      enabled: true,
+      key: "simplebandit_shadow_v1",
+      softmaxTemperature: 0.95,
+      minConfidenceObserve: 0.34,
+      minConfidenceIntervene: 0.46
     },
     compliance: {
       euSafeMode: true,
