@@ -1479,7 +1479,9 @@ function buildTimelineEntry({ trigger, raw, pageContext, featurePack, stateClass
     recent_signal_snapshot: decision.recent_signal_snapshot || null,
     derived_scores: decision.derived_scores || featurePack.derived || {},
     context_metrics: decision.context_metrics || featurePack.context || {},
-    page_context_hints: pageContext.hints || []
+    page_context_hints: pageContext.hints || [],
+    pipeline_timing: decision.pipeline_timing || null,
+    session_quality_score: Number(decision.session_quality_score || 0)
   };
 }
 
@@ -1494,6 +1496,71 @@ function pushTimelineEntry(entry) {
   if (sameSnapshot) return;
   sessionTimeline.push(entry);
   if (sessionTimeline.length > 180) sessionTimeline = sessionTimeline.slice(-180);
+}
+
+function measureLiveStage(stageTimings, key, fn) {
+  const start = performance.now();
+  try {
+    return fn();
+  } finally {
+    if (stageTimings) stageTimings[key] = round(performance.now() - start, 3);
+  }
+}
+
+function finalizeLiveStageTimings(stageTimings = {}, cycleStartMs = performance.now()) {
+  const stages = Object.fromEntries(
+    Object.entries(stageTimings || {}).map(([key, value]) => [key, round(value, 3)])
+  );
+  const totalCycleMs = round(performance.now() - cycleStartMs, 3);
+  const worstStage = Object.entries(stages).sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))[0] || ["none", 0];
+  return {
+    stages,
+    total_cycle_ms: totalCycleMs,
+    worst_stage_name: String(worstStage[0] || "none"),
+    worst_stage_ms: round(worstStage[1] || 0, 3)
+  };
+}
+
+function buildLiveSessionQuality(rawSnapshot = {}, featurePack = {}, decision = {}, timeline = []) {
+  const context = featurePack.context || {};
+  const transitionCount = Math.max(0, timeline.length - 1);
+  const transitionScore = clamp01(transitionCount / 5);
+  const explorationScore = clamp01(
+    0.35 * clamp01(Number(context.visitedCount || 0) / 4) +
+    0.30 * clamp01(Number(context.infoZoneDwellSec || 0) / 45) +
+    0.20 * clamp01(Number(rawSnapshot.sectionSwitches || 0) / 6) +
+    0.15 * clamp01(Number(rawSnapshot.clicks || 0) / 18)
+  );
+  const outcomeScore = clamp01(
+    rawSnapshot.outcomes?.purchase_completed ? 1
+      : rawSnapshot.outcomes?.checkout_started ? 0.9
+      : rawSnapshot.outcomes?.added_to_cart ? 0.75
+      : rawSnapshot.outcomes?.added_to_wishlist ? 0.4
+      : 0
+  );
+  const interventionScore = decision.intervention_type && decision.intervention_type !== "none"
+    ? (decision.policy === "INTERVENE" ? 0.75 : 0.45)
+    : 0;
+  const qualityScore = round(
+    (
+      0.34 * transitionScore +
+      0.31 * explorationScore +
+      0.23 * outcomeScore +
+      0.12 * interventionScore
+    ) * 100,
+    1
+  );
+
+  return {
+    score: qualityScore,
+    factors: {
+      transition_count: transitionCount,
+      transition_score: round(transitionScore),
+      exploration_score: round(explorationScore),
+      outcome_score: round(outcomeScore),
+      intervention_score: round(interventionScore)
+    }
+  };
 }
 
 function downloadJson(filename, data) {
@@ -1566,6 +1633,25 @@ function buildSessionArtifacts(outcomeReason = "live_mvp_export") {
   payload.outcome_detail.policy.threshold_debug = lastBundle.decision.threshold_debug || null;
   payload.outcome_detail.policy.recent_signal_snapshot = lastBundle.decision.recent_signal_snapshot || null;
   payload.outcome_detail.policy.transition_timeline = sessionTimeline.slice(-60);
+  payload.outcome_detail.policy.pipeline_timing = lastBundle.decision.pipeline_timing || null;
+  payload.outcome_detail.policy.stage_timings = lastBundle.decision.pipeline_timing?.stages || {};
+  payload.outcome_detail.policy.decision_cycle_ms = Number(lastBundle.decision.pipeline_timing?.total_cycle_ms || 0);
+  payload.outcome_detail.policy.worst_stage_name = lastBundle.decision.pipeline_timing?.worst_stage_name || "none";
+  payload.outcome_detail.policy.worst_stage_ms = Number(lastBundle.decision.pipeline_timing?.worst_stage_ms || 0);
+  const liveQuality = buildLiveSessionQuality(rawSnapshot, lastBundle.featurePack, lastBundle.decision, sessionTimeline);
+  const baseQuality = Number(payload.outcome_detail.policy.session_quality_score || payload.session_quality_score || 0);
+  const combinedQuality = round(
+    baseQuality > 0
+      ? (0.65 * baseQuality) + (0.35 * liveQuality.score)
+      : liveQuality.score,
+    1
+  );
+  payload.session_quality_score = combinedQuality;
+  payload.outcome_detail.policy.session_quality_score = combinedQuality;
+  payload.outcome_detail.policy.session_quality_factors = {
+    ...(payload.outcome_detail.policy.session_quality_factors || {}),
+    live_timeline: liveQuality.factors
+  };
 
   return {
     payload,
@@ -1615,20 +1701,22 @@ async function sendSessionToSupabase() {
 function evaluateNow(trigger = "tick") {
   if (!runtime) return;
 
-  const raw = runtime.collector.getRawSnapshot();
-  const pageContext = runtime.pageContextExtractor.extract();
-  const featurePack = runtime.featureExtractor.extract(raw);
-  const baseState = runtime.stateClassifier.classify(raw, featurePack, pageContext, {});
-  const reasonAnalysis = runtime.reasonCodeEngine.analyze(raw, featurePack, pageContext, baseState);
-  const stateClassification = runtime.stateClassifier.classify(raw, featurePack, pageContext, reasonAnalysis);
-  const ruleEvaluation = runtime.rulesResolver.evaluate(raw, featurePack, pageContext, stateClassification);
-  const policyDecision = derivePolicy({
+  const cycleStartMs = performance.now();
+  const stageTimings = {};
+  const raw = measureLiveStage(stageTimings, "collector_snapshot", () => runtime.collector.getRawSnapshot());
+  const pageContext = measureLiveStage(stageTimings, "page_context_extraction", () => runtime.pageContextExtractor.extract());
+  const featurePack = measureLiveStage(stageTimings, "feature_extraction", () => runtime.featureExtractor.extract(raw));
+  const baseState = measureLiveStage(stageTimings, "state_prefetch", () => runtime.stateClassifier.classify(raw, featurePack, pageContext, {}));
+  const reasonAnalysis = measureLiveStage(stageTimings, "reason_code_analysis", () => runtime.reasonCodeEngine.analyze(raw, featurePack, pageContext, baseState));
+  const stateClassification = measureLiveStage(stageTimings, "state_classification", () => runtime.stateClassifier.classify(raw, featurePack, pageContext, reasonAnalysis));
+  const ruleEvaluation = measureLiveStage(stageTimings, "rules_evaluation", () => runtime.rulesResolver.evaluate(raw, featurePack, pageContext, stateClassification));
+  const policyDecision = measureLiveStage(stageTimings, "policy_derivation", () => derivePolicy({
     stateClassification,
     featurePack,
     ruleWinner: ruleEvaluation.winner,
     rulesResolver: runtime.rulesResolver
-  });
-  const mapped = runtime.adaptationMapper.map({
+  }));
+  const mapped = measureLiveStage(stageTimings, "adaptation_mapping", () => runtime.adaptationMapper.map({
     policy: policyDecision.policy,
     ruleWinner: ruleEvaluation.winner,
     featurePack,
@@ -1636,9 +1724,9 @@ function evaluateNow(trigger = "tick") {
     stateClassification,
     rawSnapshot: raw,
     confidence: policyDecision.confidence
-  });
+  }));
 
-  const stabilized = runtime.hysteresis.stabilize({
+  const stabilized = measureLiveStage(stageTimings, "hysteresis_stabilization", () => runtime.hysteresis.stabilize({
     ...policyDecision,
     ...mapped,
     resolved_mode: mapped.mode,
@@ -1664,9 +1752,17 @@ function evaluateNow(trigger = "tick") {
     raw_snapshot_summary: raw,
     time_since_page_load_ms: Math.max(0, Date.now() - Number(raw.pageStartTs || Date.now())),
     trigger
-  });
+  }));
 
-  const presented = paceLiveDecision(stabilized, raw);
+  const presentedBase = measureLiveStage(stageTimings, "presentation_resolution", () => paceLiveDecision(stabilized, raw));
+  const pipelineTiming = finalizeLiveStageTimings(stageTimings, cycleStartMs);
+  const presented = {
+    ...presentedBase,
+    pipeline_timing: pipelineTiming,
+    decision_cycle_ms: pipelineTiming.total_cycle_ms,
+    worst_stage_name: pipelineTiming.worst_stage_name,
+    worst_stage_ms: pipelineTiming.worst_stage_ms
+  };
 
   runtime.collector.registerPolicyDecision({
     policy: presented.policy,
@@ -1680,18 +1776,32 @@ function evaluateNow(trigger = "tick") {
     stateClassification,
     decision: presented
   };
+  lastDecision = presented;
+  measureLiveStage(stageTimings, "action_resolution", () => {
+    applyDecision(presented);
+  });
+  const finalPipelineTiming = finalizeLiveStageTimings(stageTimings, cycleStartMs);
+  lastBundle.decision = {
+    ...lastBundle.decision,
+    pipeline_timing: finalPipelineTiming,
+    decision_cycle_ms: finalPipelineTiming.total_cycle_ms,
+    worst_stage_name: finalPipelineTiming.worst_stage_name,
+    worst_stage_ms: finalPipelineTiming.worst_stage_ms
+  };
+  const liveQuality = buildLiveSessionQuality(lastBundle.rawSnapshot, featurePack, lastBundle.decision, sessionTimeline);
+  lastBundle.decision.session_quality_score = liveQuality.score;
+  lastBundle.decision.session_quality_factors = liveQuality.factors;
+  lastDecision = lastBundle.decision;
   pushTimelineEntry(buildTimelineEntry({
     trigger,
     raw: lastBundle.rawSnapshot,
     pageContext,
     featurePack,
     stateClassification,
-    decision: presented
+    decision: lastDecision
   }));
-  lastDecision = presented;
-  applyDecision(presented);
   updateSignalPanel(lastBundle.rawSnapshot);
-  updateInspector(presented);
+  updateInspector(lastDecision);
 }
 
 function scheduleEvaluation(trigger = "event", delayMs = LIVE_MVP_PACING.evaluationDebounceMs) {

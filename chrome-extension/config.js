@@ -32,7 +32,17 @@
       maxExposureCount: 8,
       minSessionSecondsForStableSignals: 5,
       maxPriceHoverEvents: 4,
-      maxCartIntentEvents: 5
+      maxCartIntentEvents: 5,
+      recentSignalWindowMs: 15000,
+      recentResearchWindowMs: 15000,
+      recentFrictionWindowMs: 15000,
+      decisionSignalHalfLifeMs: 18000,
+      priceSignalHalfLifeMs: 16000,
+      researchSignalHalfLifeMs: 22000,
+      frictionSignalHalfLifeMs: 9000,
+      commerceMemoryFullStrengthMs: 30000,
+      commerceMemoryDecayWindowMs: 120000,
+      commerceMemoryFloor: 0.45
     },
     pageContext: {
       textNodeScanLimit: 350,
@@ -44,16 +54,36 @@
       minUnsureScore: 0.42,
       maxListingPenaltyForTrackable: 0.34,
       actionNodeScanLimit: 160,
-      listingNodeScanLimit: 240
+      listingNodeScanLimit: 240,
+      passiveCollectOnUnsure: true
     },
     state: {
       minimumConfidence: 0.36
     },
     hysteresis: {
       minModeDwellMs: 9000,
+      minModeDwellMsByMode: {
+        DESIGN_OXYGEN: 3500,
+        SPOTLIGHT_MODE: 4500,
+        EXPRESS_LANE: 3000
+      },
       requiredStableHits: 2,
+      requiredStableHitsByMode: {
+        DESIGN_OXYGEN: 1,
+        SPOTLIGHT_MODE: 1,
+        EXPRESS_LANE: 1
+      },
       minConfidenceDelta: 0.06,
+      minConfidenceDeltaByMode: {
+        DESIGN_OXYGEN: 0.03,
+        SPOTLIGHT_MODE: 0.04,
+        EXPRESS_LANE: 0.04
+      },
       forceConfidenceDelta: 0.12,
+      recoveryHoldMsByMode: {
+        DESIGN_OXYGEN: 8000,
+        SPOTLIGHT_MODE: 9000
+      },
       coldStartObserveMs: 5000,
       coldStartInterveneMs: 6500,
       commercialToResearchDwellMs: 3500,

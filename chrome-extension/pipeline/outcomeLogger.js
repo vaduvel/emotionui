@@ -25,6 +25,113 @@
       return Number(n.toFixed(digits));
     }
 
+    clamp01(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return 0;
+      return Math.max(0, Math.min(1, n));
+    }
+
+    max(values = []) {
+      let value = 0;
+      for (const item of values) {
+        const n = Number(item || 0);
+        if (n > value) value = n;
+      }
+      return value;
+    }
+
+    normalizePipelineTiming(pipelineTiming = {}) {
+      const stages = (pipelineTiming && typeof pipelineTiming.stages === "object" && pipelineTiming.stages)
+        ? Object.fromEntries(
+            Object.entries(pipelineTiming.stages).map(([key, value]) => [key, this.round(value)])
+          )
+        : {};
+      const worstStageName = String(
+        pipelineTiming.worst_stage_name ||
+        Object.entries(stages).sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))[0]?.[0] ||
+        "none"
+      );
+      const worstStageMs = this.round(
+        pipelineTiming.worst_stage_ms != null
+          ? pipelineTiming.worst_stage_ms
+          : stages[worstStageName] || 0
+      );
+      const totalCycleMs = this.round(
+        pipelineTiming.total_cycle_ms != null
+          ? pipelineTiming.total_cycle_ms
+          : Object.values(stages).reduce((acc, value) => acc + (Number(value) || 0), 0)
+      );
+
+      return {
+        stages,
+        total_cycle_ms: totalCycleMs,
+        worst_stage_name: worstStageName,
+        worst_stage_ms: worstStageMs
+      };
+    }
+
+    buildSessionQuality({ rawSnapshot = {}, featurePack = {}, decision = {}, stateClassification = {} } = {}) {
+      const context = featurePack.context || {};
+      const history = Array.isArray(decision.mode_history) ? decision.mode_history : [];
+      const transitionCount = Math.max(0, history.length - 1);
+      const clicks = Math.max(0, Number(rawSnapshot.clicks || 0));
+      const sectionSwitches = Math.max(0, Number(rawSnapshot.sectionSwitches || 0));
+      const scrolledPercentage = this.clamp01(
+        Number(rawSnapshot.maxScrollPercentage || context.scrolledPercentage || 0)
+      );
+      const informativeBehaviorScore = this.clamp01(
+        0.30 * this.clamp01(Number(context.visitedCount || 0) / 4) +
+        0.30 * this.clamp01(Number(context.infoZoneDwellSec || 0) / 45) +
+        0.20 * this.clamp01(sectionSwitches / 6) +
+        0.20 * this.clamp01(clicks / 18)
+      );
+      const transitionScore = this.clamp01(transitionCount / 4);
+      const interventionScore = Boolean(rawSnapshot?.outcomes?.intervention_accepted)
+        ? 1
+        : Boolean(rawSnapshot?.outcomes?.intervention_exposed)
+          ? (Boolean(rawSnapshot?.outcomes?.intervention_closed) ? 0.35 : 0.7)
+          : 0;
+      const outcomeScore = this.clamp01(this.max([
+        rawSnapshot?.outcomes?.purchase_completed ? 1 : 0,
+        rawSnapshot?.outcomes?.checkout_started ? 0.9 : 0,
+        rawSnapshot?.outcomes?.added_to_cart ? 0.75 : 0,
+        rawSnapshot?.outcomes?.added_to_wishlist ? 0.4 : 0
+      ]));
+      const durationScore = this.clamp01(Number(context.sessionDurationSec || rawSnapshot.sessionDurationSec || 0) / 60);
+      const signalRichnessScore = this.clamp01(
+        0.35 * this.clamp01(Number((stateClassification.reason_codes || decision.reason_codes || []).length || 0) / 3) +
+        0.30 * this.clamp01(Number((stateClassification.reason_families || decision.reason_families || []).length || 0) / 3) +
+        0.20 * scrolledPercentage +
+        0.15 * this.clamp01(Number(context.priceHoverCount || 0) / 3)
+      );
+      const qualityScore = this.round(
+        (
+          0.28 * transitionScore +
+          0.27 * informativeBehaviorScore +
+          0.20 * outcomeScore +
+          0.12 * interventionScore +
+          0.08 * durationScore +
+          0.05 * signalRichnessScore
+        ) * 100,
+        1
+      );
+
+      return {
+        score: qualityScore,
+        factors: {
+          transition_count: transitionCount,
+          transition_score: this.round(transitionScore),
+          informative_behavior_score: this.round(informativeBehaviorScore),
+          intervention_score: this.round(interventionScore),
+          outcome_score: this.round(outcomeScore),
+          duration_score: this.round(durationScore),
+          signal_richness_score: this.round(signalRichnessScore),
+          active_reason_code_count: Number((stateClassification.reason_codes || decision.reason_codes || []).length || 0),
+          state_history_depth: history.length
+        }
+      };
+    }
+
     buildAttributionContext(rawSnapshot = {}, decision = {}) {
       const now = Date.now();
       const attributionCfg = this.config.attribution || {};
@@ -85,6 +192,7 @@
       const resolved = this.helpers.getResolvedDecision(decision, rawSnapshot, featurePack, pageContext, lastStateClassification);
       const attribution = this.buildAttributionContext(rawSnapshot, decision);
       const normalizedPageContext = this.helpers.normalizePageContextValue(decision.page_context || pageContext);
+      const pipelineTiming = this.normalizePipelineTiming(decision.pipeline_timing || {});
 
       return {
         source: decision.source,
@@ -140,6 +248,8 @@
         pdp_gate_score: Number(decision.pdp_gate_score || lastPdpGate.score || 0),
         pdp_gate_reasons: Array.isArray(decision.pdp_gate_reasons) ? decision.pdp_gate_reasons : (lastPdpGate.reasons || []),
         pdp_gate_metrics: decision.pdp_gate_metrics || lastPdpGate.metrics || {},
+        pdp_gate_passive_collect: Boolean(decision.passive_collect || lastPdpGate.passiveCollect),
+        collection_mode: decision.collection_mode || (lastPdpGate.collectionMode || (decision.passive_collect ? "unsure_passive" : "trackable")),
         page_context: normalizedPageContext.summary,
         page_context_hints: normalizedPageContext.hints,
         page_context_coverage: Number(normalizedPageContext.coverage || 0),
@@ -174,6 +284,11 @@
         post_action_outcome_delay_ms: Number(attribution.post_action_outcome_delay_ms || 0),
         attribution_kind: attribution.attribution_kind,
         assisted_outcome_confidence: Number(attribution.assisted_outcome_confidence || 0),
+        pipeline_timing: pipelineTiming,
+        stage_timings: pipelineTiming.stages,
+        decision_cycle_ms: pipelineTiming.total_cycle_ms,
+        worst_stage_name: pipelineTiming.worst_stage_name,
+        worst_stage_ms: pipelineTiming.worst_stage_ms,
         was_ui_contaminated: Number(rawSnapshot?.extensionUi?.filteredEvents || 0) > 0,
         filtered_extension_ui_event_count: Number(rawSnapshot?.extensionUi?.filteredEvents || 0),
         extension_ui_event_breakdown: rawSnapshot?.extensionUi || {},
@@ -251,6 +366,12 @@
       const outcome = outcomeReason || "left";
       const specDwellSec = Math.round((rawSnapshot.sectionDwellMs.specs || 0) / 1000);
       const timeOnPriceSec = this.round((rawSnapshot.timeOnPriceMs || 0) / 1000, 3);
+      const sessionQuality = this.buildSessionQuality({
+        rawSnapshot,
+        featurePack,
+        decision,
+        stateClassification
+      });
 
       return {
         session_id: rawSnapshot.sessionId,
@@ -277,6 +398,7 @@
         confidence: Number(decision.confidence || 0),
         user_agent: navigatorUserAgent,
         screen_width: screenWidth,
+        session_quality_score: sessionQuality.score,
         click_targets: rawSnapshot.clickTargets || {},
         hover_targets: rawSnapshot.hoverTargets || {},
         funnel_stage: this.helpers.inferFunnelStage(rawSnapshot),
@@ -300,6 +422,8 @@
           intervention_exposed: Boolean(rawSnapshot.outcomes.intervention_exposed),
           review_dwell_over_10s: Boolean(rawSnapshot.outcomes.review_dwell_over_10s),
           intervention_type: decision.intervention_type || "none",
+          session_quality_score: sessionQuality.score,
+          session_quality_factors: sessionQuality.factors,
           policy: policyDebug
         }
       };

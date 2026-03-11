@@ -216,12 +216,24 @@
     }
 
     result(verdict, score, reasons, metrics = {}) {
+      const passiveCollect = verdict === "UNSURE";
+      const collectionMode = verdict === "TRACKABLE_PDP"
+        ? "trackable"
+        : passiveCollect
+          ? "unsure_passive"
+          : "blocked";
       return {
         verdict,
         trackable: verdict === "TRACKABLE_PDP",
+        passiveCollect,
+        collectable: verdict === "TRACKABLE_PDP" || passiveCollect,
+        collectionMode,
         score: this.round(score),
         reasons: Array.from(new Set((reasons || []).filter(Boolean))),
-        metrics
+        metrics: {
+          ...metrics,
+          passiveCollectRecommended: passiveCollect
+        }
       };
     }
   }

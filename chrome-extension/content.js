@@ -85,6 +85,7 @@
 
   let enabled = true;
   let pageTrackable = true;
+  let pageCollectionMode = "blocked";
   let started = false;
   let saved = false;
   let decisionTimer = null;
@@ -126,10 +127,31 @@
     return {
       verdict: "UNSURE",
       trackable: false,
+      passiveCollect: true,
+      collectable: true,
+      collectionMode: "unsure_passive",
       score: 0,
       reasons: ["uninitialized"],
       metrics: {}
     };
+  }
+
+  function resolveCollectionMode(gate = {}) {
+    if (Boolean(gate.trackable)) return "trackable";
+    if (Boolean((config.pdpGate && config.pdpGate.passiveCollectOnUnsure) !== false) && String(gate.verdict || "") === "UNSURE") {
+      return "unsure_passive";
+    }
+    return "blocked";
+  }
+
+  function syncCollectionMode(gate = {}) {
+    pageCollectionMode = resolveCollectionMode(gate);
+    pageTrackable = pageCollectionMode === "trackable";
+    return pageCollectionMode;
+  }
+
+  function isCollectablePageMode(mode = pageCollectionMode) {
+    return mode === "trackable" || mode === "unsure_passive";
   }
 
   function clearPdpGateRetry() {
@@ -157,12 +179,21 @@
       pdpGateRetryTimer = null;
       pdpGateRetryCount += 1;
       lastPdpGate = pdpGate.evaluate();
-      pageTrackable = Boolean(lastPdpGate.trackable);
+      const collectionMode = syncCollectionMode(lastPdpGate);
 
-      if (pageTrackable) {
+      if (collectionMode === "trackable") {
         clearPdpGateRetry();
-        if (enabled) startTracking();
+        if (enabled) {
+          if (started) decisionCycle().catch(() => {});
+          else startTracking();
+        }
         else updatePopupStats().catch(() => {});
+        return;
+      }
+
+      if (collectionMode === "unsure_passive" && enabled && !started) {
+        clearPdpGateRetry();
+        startTracking();
         return;
       }
 
@@ -265,6 +296,38 @@
     return Number(n.toFixed(digits));
   }
 
+  function measureStage(stageTimings, key, fn) {
+    const start = performance.now();
+    try {
+      return fn();
+    } finally {
+      if (stageTimings) stageTimings[key] = round(performance.now() - start, 3);
+    }
+  }
+
+  async function measureStageAsync(stageTimings, key, fn) {
+    const start = performance.now();
+    try {
+      return await fn();
+    } finally {
+      if (stageTimings) stageTimings[key] = round(performance.now() - start, 3);
+    }
+  }
+
+  function finalizeStageTimings(stageTimings = {}, cycleStartMs = performance.now()) {
+    const stages = Object.fromEntries(
+      Object.entries(stageTimings || {}).map(([key, value]) => [key, round(value, 3)])
+    );
+    const totalCycleMs = round(performance.now() - cycleStartMs, 3);
+    const worstStage = Object.entries(stages).sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))[0] || ["none", 0];
+    return {
+      stages,
+      total_cycle_ms: totalCycleMs,
+      worst_stage_name: String(worstStage[0] || "none"),
+      worst_stage_ms: round(worstStage[1] || 0, 3)
+    };
+  }
+
   function normalizeText(value) {
     return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
   }
@@ -309,20 +372,21 @@
   const FALLBACK_REASON_ANALYSIS = { primary_score_adjustments: {}, top_reason_codes: [], families: [], emotion_tag: "CALM", affect_tag: "CALM", intent_tag: "EXPLORING", constraint_tags: [], emotion_scores: {}, intent_scores: {}, constraint_scores: {} };
   const FALLBACK_STATE_CLASSIFICATION = { label: "CALM_BROWSING", primary_state: "CALM_BROWSING", confidence: 0, scores: {}, reasons: [], emotion_tag: "CALM", affect_tag: "CALM", intent_tag: "EXPLORING", constraint_tags: [], reason_codes: [], reason_families: [] };
 
-  function computeLiveBundle() {
-    const rawSnapshot = decorateSnapshotWithProfile(collector.getRawSnapshot());
+  function computeLiveBundle(options = {}) {
+    const stageTimings = options.stageTimings || null;
+    const rawSnapshot = measureStage(stageTimings, "collector_snapshot", () => decorateSnapshotWithProfile(collector.getRawSnapshot()));
 
     let featurePack = FALLBACK_FEATURE_PACK;
-    try { featurePack = extractor.extract(rawSnapshot); } catch (e) { /* bad DOM state — use fallback */ }
+    try { featurePack = measureStage(stageTimings, "feature_extraction", () => extractor.extract(rawSnapshot)); } catch (e) { /* bad DOM state — use fallback */ }
 
     let pageContext = FALLBACK_PAGE_CONTEXT;
-    try { pageContext = normalizePageContextValue(pageContextExtractor.extract()); } catch (e) { /* bad DOM state — use fallback */ }
+    try { pageContext = measureStage(stageTimings, "page_context_extraction", () => normalizePageContextValue(pageContextExtractor.extract())); } catch (e) { /* bad DOM state — use fallback */ }
 
     let reasonAnalysis = FALLBACK_REASON_ANALYSIS;
-    try { reasonAnalysis = reasonCodeEngine.analyze(rawSnapshot, featurePack, pageContext, lastStateClassification); } catch (e) { /* use fallback */ }
+    try { reasonAnalysis = measureStage(stageTimings, "reason_code_analysis", () => reasonCodeEngine.analyze(rawSnapshot, featurePack, pageContext, lastStateClassification)); } catch (e) { /* use fallback */ }
 
     let stateClassification = FALLBACK_STATE_CLASSIFICATION;
-    try { stateClassification = stateClassifier.classify(rawSnapshot, featurePack, pageContext, reasonAnalysis); } catch (e) { /* use fallback */ }
+    try { stateClassification = measureStage(stageTimings, "state_classification", () => stateClassifier.classify(rawSnapshot, featurePack, pageContext, reasonAnalysis)); } catch (e) { /* use fallback */ }
 
     return { rawSnapshot, featurePack, pageContext, stateClassification, reasonAnalysis };
   }
@@ -564,16 +628,17 @@
 
   function refreshPdpGate() {
     lastPdpGate = pdpGate.evaluate();
+    syncCollectionMode(lastPdpGate);
     return lastPdpGate;
   }
 
-  function evaluateMvpRules(rawSnapshot, featurePack, pageContext = {}, stateClassification = {}) {
-    return rulesResolver.evaluate(rawSnapshot, featurePack, pageContext, stateClassification);
+  function evaluateMvpRules(rawSnapshot, featurePack, pageContext = {}, stateClassification = {}, stageTimings = null) {
+    return measureStage(stageTimings, "rules_evaluation", () => rulesResolver.evaluate(rawSnapshot, featurePack, pageContext, stateClassification));
   }
 
-  function mapResolvedUi(decision, rawSnapshot, featurePack, pageContext = lastPageContext, stateClassification = lastStateClassification) {
-    const ruleEvaluation = evaluateMvpRules(rawSnapshot, featurePack, pageContext, stateClassification);
-    const mapped = adaptationMapper.map({
+  function mapResolvedUi(decision, rawSnapshot, featurePack, pageContext = lastPageContext, stateClassification = lastStateClassification, stageTimings = null) {
+    const ruleEvaluation = evaluateMvpRules(rawSnapshot, featurePack, pageContext, stateClassification, stageTimings);
+    const mapped = measureStage(stageTimings, "adaptation_mapping", () => adaptationMapper.map({
       policy: decision.policy,
       confidence: decision.confidence,
       rawSnapshot,
@@ -583,7 +648,7 @@
       ruleWinner: ruleEvaluation.winner,
       previousDecision: lastDecision,
       pdpGate: lastPdpGate
-    });
+    }));
 
     return {
       mode: mapped.mode || "STANDARD",
@@ -601,7 +666,7 @@
     };
   }
 
-  function getResolvedDecision(decision, rawSnapshot, featurePack, pageContext = lastPageContext, stateClassification = lastStateClassification) {
+  function getResolvedDecision(decision, rawSnapshot, featurePack, pageContext = lastPageContext, stateClassification = lastStateClassification, stageTimings = null) {
     if (decision && decision.mapped_mode) {
       return {
         mode: decision.mapped_mode,
@@ -618,12 +683,12 @@
         state_contract_reason_families: Array.isArray(decision.state_contract_reason_families) ? decision.state_contract_reason_families : []
       };
     }
-    return mapResolvedUi(decision, rawSnapshot, featurePack, pageContext, stateClassification);
+    return mapResolvedUi(decision, rawSnapshot, featurePack, pageContext, stateClassification, stageTimings);
   }
 
-  function finalizeDecisionEnvelope(decision, rawSnapshot, featurePack, pageContext, stateClassification, extra = {}) {
-    const resolved = mapResolvedUi(decision, rawSnapshot, featurePack, pageContext, stateClassification);
-    const previousResolved = getResolvedDecision(lastDecision, rawSnapshot, featurePack, lastPageContext, lastStateClassification);
+  function finalizeDecisionEnvelope(decision, rawSnapshot, featurePack, pageContext, stateClassification, extra = {}, stageTimings = null) {
+    const resolved = mapResolvedUi(decision, rawSnapshot, featurePack, pageContext, stateClassification, stageTimings);
+    const previousResolved = getResolvedDecision(lastDecision, rawSnapshot, featurePack, lastPageContext, lastStateClassification, null);
     const normalizedPageContext = normalizePageContextValue(pageContext);
 
     return {
@@ -683,6 +748,53 @@
     return outcomeLogger.buildAttributionContext(rawSnapshot, decision);
   }
 
+  function createPassiveCollectDecision(rawSnapshot, featurePack, pageContext, stateClassification, stageTimings = null) {
+    const passiveEnvelope = finalizeDecisionEnvelope(
+      {
+        ...createColdDecision("pdp_unsure_passive_collect"),
+        policy: "SILENT",
+        confidence: Math.max(0.18, Number(stateClassification.confidence || 0) * 0.65),
+        source: "passive_collect",
+        reason: "pdp_unsure_passive_collect",
+        abstained: true,
+        policy_probs: { SILENT: 1, OBSERVE: 0, INTERVENE: 0 }
+      },
+      rawSnapshot,
+      featurePack,
+      pageContext,
+      stateClassification,
+      {
+        was_override: true,
+        override_from: "ADAPTIVE_RUNTIME",
+        override_to: "SILENT",
+        override_reason: "pdp_unsure_passive_collect"
+      },
+      stageTimings
+    );
+
+    return {
+      ...passiveEnvelope,
+      policy: "SILENT",
+      resolved_mode: "STANDARD",
+      resolved_mode_reason: "pdp_unsure_passive_collect",
+      resolved_source: "passive_collect",
+      resolved_rule_id: null,
+      mode: "STANDARD",
+      rule_id: null,
+      all_rules: [],
+      intervention_type: "none",
+      mapped_mode: "STANDARD",
+      mapped_intervention_type: "none",
+      mapper_reasons: ["pdp_unsure_passive_collect"],
+      state_contract_mode: "STANDARD",
+      state_contract_intervention_type: "none",
+      passive_collect: true,
+      collection_mode: "unsure_passive",
+      experiment_variant: "passive_collect",
+      experiment_runtime_mode: "passive_collect"
+    };
+  }
+
   function inferFunnelStage(rawSnapshot) {
     return rulesResolver.inferFunnelStage(rawSnapshot);
   }
@@ -713,7 +825,7 @@
   async function updatePopupStats() {
     if (!hasRuntimeAccess()) return null;
     try {
-      if (!pageTrackable) {
+      if (pageCollectionMode === "blocked") {
         const stats = {
           rage_clicks: 0,
           state: "STANDARD",
@@ -763,7 +875,8 @@
           page_density_score: Number(lastPageContext.metrics?.pageDensityScore || 0),
           active_section: "none",
           was_ui_contaminated: false,
-          filtered_extension_ui_event_count: 0
+          filtered_extension_ui_event_count: 0,
+          collection_mode: "blocked"
         };
         await policyClient.updateStats(stats);
         return stats;
@@ -815,6 +928,7 @@
         experiment_variant: decision.experiment_variant || "adaptive",
         experiment_runtime_mode: decision.experiment_runtime_mode || "adaptive",
         experiment_key: decision.experiment_key || null,
+        collection_mode: decision.collection_mode || pageCollectionMode,
         challenger_policy: decision.challenger_policy || null,
         challenger_confidence: Number(decision.challenger_confidence || 0),
         challenger_source: decision.challenger_source || null,
@@ -854,7 +968,7 @@
   async function requestPolicyDecision() {
     if (!hasRuntimeAccess()) return { rawSnapshot: null, featurePack: null, decision: lastDecision };
     try {
-      if (!pageTrackable) {
+      if (pageCollectionMode === "blocked") {
         lastPageContext = createDefaultPageContext();
         lastStateClassification = createDefaultStateClassification();
         lastDecision = {
@@ -863,6 +977,7 @@
           model_version: Number(lastDecision.model_version || 1),
           source: "rules_filter",
           primary_state: CanonicalStates.DEFAULT_LABEL || "CALM_BROWSING",
+          collection_mode: "blocked",
           pdp_gate_verdict: lastPdpGate.verdict || "UNSURE",
           pdp_gate_score: Number(lastPdpGate.score || 0),
           pdp_gate_reasons: Array.isArray(lastPdpGate.reasons) ? lastPdpGate.reasons : [],
@@ -873,13 +988,45 @@
         return { rawSnapshot: null, featurePack: null, decision: lastDecision };
       }
 
-      const { rawSnapshot, featurePack, pageContext, stateClassification } = computeLiveBundle();
+      const cycleStartMs = performance.now();
+      const stageTimings = {};
+      const { rawSnapshot, featurePack, pageContext, stateClassification } = computeLiveBundle({ stageTimings });
       const cooldownInfo = await getDomainDismissCooldown(rawSnapshot.site);
       const previousResolved = getResolvedDecision(lastDecision, rawSnapshot, featurePack, pageContext, stateClassification);
 
       lastFeaturePack = featurePack;
       lastPageContext = pageContext;
       lastStateClassification = stateClassification;
+
+      if (pageCollectionMode === "unsure_passive") {
+        let passiveDecision = createPassiveCollectDecision(
+          rawSnapshot,
+          featurePack,
+          pageContext,
+          stateClassification,
+          stageTimings
+        );
+        passiveDecision = {
+          ...passiveDecision,
+          dismiss_cooldown_active: false,
+          dismiss_cooldown_until: 0,
+          dismiss_cooldown_remaining_ms: 0,
+          previous_mode: previousResolved.mode || null
+        };
+
+        measureStage(stageTimings, "action_resolution", () => {
+          resolver.resetToSilent();
+        });
+        const pipelineTiming = finalizeStageTimings(stageTimings, cycleStartMs);
+        lastDecision = {
+          ...passiveDecision,
+          pipeline_timing: pipelineTiming,
+          decision_cycle_ms: pipelineTiming.total_cycle_ms,
+          worst_stage_name: pipelineTiming.worst_stage_name,
+          worst_stage_ms: pipelineTiming.worst_stage_ms
+        };
+        return { rawSnapshot, featurePack, decision: lastDecision };
+      }
 
       const decidePayload = {
         type: "EMOTIONUI_POLICY_DECIDE",
@@ -911,7 +1058,11 @@
         }
       };
 
-      const decisionResult = await policyClient.decide(decidePayload.features, decidePayload.context);
+      const decisionResult = await measureStageAsync(
+        stageTimings,
+        "policy_decide",
+        () => policyClient.decide(decidePayload.features, decidePayload.context)
+      );
       let decision = decisionResult || null;
 
       if (!decision || !decision.policy) {
@@ -949,14 +1100,16 @@
           override_from: safetyOverrode ? modelPolicy : null,
           override_to: safetyOverrode ? String(safetyAdjusted.policy || modelPolicy).toUpperCase() : null,
           override_reason: safetyOverrode ? String(safetyAdjusted.reason || "safety_override") : "none"
-        }
+        },
+        stageTimings
       );
 
       candidate = {
         ...candidate,
         dismiss_cooldown_active: Boolean(cooldownInfo.active),
         dismiss_cooldown_until: Number(cooldownInfo.until || 0),
-        dismiss_cooldown_remaining_ms: Number(cooldownInfo.remainingMs || 0)
+        dismiss_cooldown_remaining_ms: Number(cooldownInfo.remainingMs || 0),
+        collection_mode: "trackable"
       };
 
       if (candidate.policy === "INTERVENE" && candidate.mapped_mode === "RESEARCH_MODE") {
@@ -987,7 +1140,7 @@
         };
       }
 
-      lastDecision = hysteresisGuard.stabilize(candidate);
+      lastDecision = measureStage(stageTimings, "hysteresis_stabilization", () => hysteresisGuard.stabilize(candidate));
       if (lastDecision.was_blocked) {
         lastDecision = {
           ...lastDecision,
@@ -999,7 +1152,17 @@
       }
 
       collector.registerPolicyDecision(lastDecision);
-      resolver.apply(lastDecision);
+      measureStage(stageTimings, "action_resolution", () => {
+        resolver.apply(lastDecision);
+      });
+      const pipelineTiming = finalizeStageTimings(stageTimings, cycleStartMs);
+      lastDecision = {
+        ...lastDecision,
+        pipeline_timing: pipelineTiming,
+        decision_cycle_ms: pipelineTiming.total_cycle_ms,
+        worst_stage_name: pipelineTiming.worst_stage_name,
+        worst_stage_ms: pipelineTiming.worst_stage_ms
+      };
 
       return { rawSnapshot, featurePack, decision: lastDecision };
     } catch (error) {
@@ -1025,7 +1188,7 @@
 
   async function saveSession(outcomeReason, options = {}) {
     const force = Boolean(options.force);
-    if ((!enabled && !force) || saved || !pageTrackable || !hasRuntimeAccess()) return;
+    if ((!enabled && !force) || saved || !isCollectablePageMode() || !hasRuntimeAccess()) return;
     try {
       saved = true;
 
@@ -1033,30 +1196,32 @@
       const { rawSnapshot, featurePack } = computeLiveBundle();
       const attribution = buildAttributionContext(rawSnapshot, lastDecision);
 
-      await policyClient.learn(
-        featurePack.normalized,
-        { policy: lastDecision.policy, confidence: lastDecision.confidence },
-        {
-          outcome: payload.outcome,
-          sessionDurationSec: payload.time_on_page_sec,
-          outcomeDetail: payload.outcome_detail,
-          cartAbandons: payload.cart_abandons,
-          timeOnPriceSec: payload.time_on_price,
-          directCheckout: payload.direct_checkout,
-          attribution,
-          decisionMeta: {
-            policy: lastDecision.policy,
-            resolvedMode: lastDecision.resolved_mode,
-            interventionType: lastDecision.intervention_type,
-            stateLabel: lastDecision.state_label,
-            wasOverride: Boolean(lastDecision.was_override),
-            experimentKey: lastDecision.experiment_key || null,
-            experimentVariant: lastDecision.experiment_variant || "adaptive",
-            experimentRuntimeMode: lastDecision.experiment_runtime_mode || "adaptive",
-            experimentConfigVersion: lastDecision.experiment_config_version || null
+      if (pageCollectionMode === "trackable" && !lastDecision.passive_collect) {
+        await policyClient.learn(
+          featurePack.normalized,
+          { policy: lastDecision.policy, confidence: lastDecision.confidence },
+          {
+            outcome: payload.outcome,
+            sessionDurationSec: payload.time_on_page_sec,
+            outcomeDetail: payload.outcome_detail,
+            cartAbandons: payload.cart_abandons,
+            timeOnPriceSec: payload.time_on_price,
+            directCheckout: payload.direct_checkout,
+            attribution,
+            decisionMeta: {
+              policy: lastDecision.policy,
+              resolvedMode: lastDecision.resolved_mode,
+              interventionType: lastDecision.intervention_type,
+              stateLabel: lastDecision.state_label,
+              wasOverride: Boolean(lastDecision.was_override),
+              experimentKey: lastDecision.experiment_key || null,
+              experimentVariant: lastDecision.experiment_variant || "adaptive",
+              experimentRuntimeMode: lastDecision.experiment_runtime_mode || "adaptive",
+              experimentConfigVersion: lastDecision.experiment_config_version || null
+            }
           }
-        }
-      );
+        );
+      }
 
       await policyClient.saveSession(payload);
 
@@ -1078,7 +1243,7 @@
     if (nextFingerprint === currentRouteFingerprint) return;
     currentRouteFingerprint = nextFingerprint;
 
-    if (started || pageTrackable) {
+    if (started || isCollectablePageMode()) {
       stopTracking(reason);
     } else {
       collector.stop();
@@ -1091,7 +1256,7 @@
     lastDecision = createColdDecision("route_change_reset");
     hysteresisGuard.reset();
     clearPdpGateRetry();
-    pageTrackable = refreshPdpGate().trackable;
+    refreshPdpGate();
 
     await loadSessionProfile(collector.getRawSnapshot().productId).catch(() => {});
 
@@ -1132,8 +1297,8 @@
 
   function startTracking() {
     if (started) return;
-    pageTrackable = refreshPdpGate().trackable;
-    if (!pageTrackable) {
+    refreshPdpGate();
+    if (!isCollectablePageMode()) {
       resolver.resetToSilent();
       if (shouldRetryPdpGate(lastPdpGate)) {
         schedulePdpGateRetry("start_tracking_unsure");
@@ -1144,6 +1309,12 @@
       return;
     }
     clearPdpGateRetry();
+    if (pageCollectionMode === "unsure_passive") {
+      resolver.resetToSilent();
+      if (shouldRetryPdpGate(lastPdpGate)) {
+        schedulePdpGateRetry("start_tracking_unsure_passive");
+      }
+    }
     loadSessionProfile(collector.getRawSnapshot().productId).catch(() => {});
     started = true;
     saved = false;
@@ -1282,7 +1453,8 @@
         reversal_with_dwell_ratio: round(featurePack.normalized.reviewFocusRatio),
         page_context_coverage: Number(lastDecision.page_context_coverage || lastPageContext.coverage || 0),
         page_density_score: Number(lastDecision.page_context_metrics?.pageDensityScore || lastPageContext.metrics?.pageDensityScore || 0),
-        active_section: String(featurePack.context.activeSection || "none")
+        active_section: String(featurePack.context.activeSection || "none"),
+        collection_mode: lastDecision.collection_mode || pageCollectionMode
       });
       return;
     }
@@ -1297,7 +1469,7 @@
     const state = await safeStorageGet(["enabled"], {});
     enabled = state.enabled !== false;
     await loadSessionProfile(collector.getRawSnapshot().productId).catch(() => {});
-    pageTrackable = refreshPdpGate().trackable;
+    refreshPdpGate();
     installSpaGuard();
 
     window.addEventListener("pagehide", () => {
@@ -1310,12 +1482,13 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       currentRouteFingerprint = getRouteFingerprint();
+      const previousCollectionMode = pageCollectionMode;
       const gate = refreshPdpGate();
-      const nextTrackable = Boolean(gate.trackable);
-      if (nextTrackable === pageTrackable && gate.verdict !== "UNSURE") return;
-      pageTrackable = nextTrackable;
+      const nextCollectionMode = resolveCollectionMode(gate);
+      if (nextCollectionMode === previousCollectionMode && gate.verdict !== "UNSURE") return;
+      syncCollectionMode(gate);
 
-      if (!pageTrackable) {
+      if (!isCollectablePageMode()) {
         if (gate.verdict === "NOT_PDP") {
           stopTracking("page_not_trackable");
           clearPdpGateRetry();

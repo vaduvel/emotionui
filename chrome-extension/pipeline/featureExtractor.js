@@ -65,6 +65,44 @@
       return total;
     }
 
+    computeHalfLifeDecay(ageMs = 0, halfLifeMs = 0) {
+      const safeAgeMs = Math.max(0, Number(ageMs || 0));
+      const safeHalfLifeMs = Math.max(1, Number(halfLifeMs || 1));
+      return Math.pow(0.5, safeAgeMs / safeHalfLifeMs);
+    }
+
+    scoreRecentEvents(events = [], options = {}) {
+      if (!Array.isArray(events) || !events.length) return 0;
+      const {
+        referenceTs = Date.now(),
+        halfLifeMs = this.config.recentSignalWindowMs,
+        matcher = null,
+        weightFn = null,
+        aggregate = "max",
+        cap = 1
+      } = options;
+
+      let maxScore = 0;
+      let sumScore = 0;
+
+      for (const event of events) {
+        const ts = Number(event?.ts || 0);
+        if (!ts) continue;
+        if (typeof matcher === "function" && !matcher(event)) continue;
+        const weight = typeof weightFn === "function" ? Number(weightFn(event) || 0) : 1;
+        if (weight <= 0) continue;
+        const ageMs = Math.max(0, Number(referenceTs || 0) - ts);
+        const score = this.computeHalfLifeDecay(ageMs, halfLifeMs) * weight;
+        if (score > maxScore) maxScore = score;
+        sumScore += score;
+      }
+
+      if (aggregate === "sum") {
+        return this.clamp01(Math.min(Number(cap || 1), sumScore));
+      }
+      return this.clamp01(Math.min(Number(cap || 1), maxScore));
+    }
+
     nonZeroKeys(values = {}) {
       return Object.entries(values)
         .filter(([, v]) => Number(v) > 0)
@@ -155,21 +193,89 @@
         this.config.recentSignalWindowMs,
         (event) => ["compare_view", "compare_price_check"].includes(String(event?.type || ""))
       );
+      const commerceEventTypes = ["add_to_cart", "checkout_started", "wishlist_toggle"];
+      const referenceTs = Math.max(
+        Date.now(),
+        Number(eventLog[eventLog.length - 1]?.ts || 0),
+        Number(raw.pageStartTs || 0)
+      );
+      const recentAddToCartDecayScore = this.scoreRecentEvents(eventLog, {
+        referenceTs,
+        halfLifeMs: this.config.decisionSignalHalfLifeMs,
+        matcher: (event) => String(event?.type || "") === "add_to_cart"
+      });
+      const recentCheckoutDecayScore = this.scoreRecentEvents(eventLog, {
+        referenceTs,
+        halfLifeMs: this.config.decisionSignalHalfLifeMs,
+        matcher: (event) => String(event?.type || "") === "checkout_started"
+      });
+      const recentWishlistDecayScore = this.scoreRecentEvents(eventLog, {
+        referenceTs,
+        halfLifeMs: this.config.decisionSignalHalfLifeMs,
+        matcher: (event) => String(event?.type || "") === "wishlist_toggle"
+      });
+      const recentPriceDecayScore = this.scoreRecentEvents(eventLog, {
+        referenceTs,
+        halfLifeMs: this.config.priceSignalHalfLifeMs,
+        matcher: (event) => ["price_hover", "price_interaction_click"].includes(String(event?.type || "")),
+        aggregate: "sum"
+      });
+      const recentResearchDecayScore = this.scoreRecentEvents(eventLog, {
+        referenceTs,
+        halfLifeMs: this.config.researchSignalHalfLifeMs,
+        matcher: (event) => String(event?.type || "") === "section_switch" && /^(reviews|specs|description)$/.test(String(event?.section || "")),
+        aggregate: "sum"
+      });
+      const recentRageDecayScore = this.scoreRecentEvents(eventLog, {
+        referenceTs,
+        halfLifeMs: this.config.frictionSignalHalfLifeMs,
+        matcher: (event) => String(event?.type || "") === "rage_click"
+      });
+      const recentDeadClickDecayScore = this.scoreRecentEvents(eventLog, {
+        referenceTs,
+        halfLifeMs: this.config.frictionSignalHalfLifeMs,
+        matcher: (event) => String(event?.type || "") === "dead_click",
+        aggregate: "sum"
+      });
+      const recentJitterDecayScore = this.scoreRecentEvents(eventLog, {
+        referenceTs,
+        halfLifeMs: this.config.frictionSignalHalfLifeMs,
+        matcher: (event) => String(event?.type || "") === "mouse_jitter",
+        aggregate: "sum",
+        cap: 0.9
+      });
+      const recentCommerceActionDecayScore = this.scoreRecentEvents(eventLog, {
+        referenceTs,
+        halfLifeMs: this.config.decisionSignalHalfLifeMs,
+        matcher: (event) => commerceEventTypes.includes(String(event?.type || "")),
+        aggregate: "sum"
+      });
+      const recentCompareViewDecayScore = this.scoreRecentEvents(eventLog, {
+        referenceTs,
+        halfLifeMs: this.config.priceSignalHalfLifeMs,
+        matcher: (event) => ["compare_view", "compare_price_check"].includes(String(event?.type || "")),
+        aggregate: "sum",
+        cap: 0.8
+      });
       const recentCommerceActionCount = recentWishlistCount + recentAddToCartCount + recentCheckoutCount;
       const recentFrictionEventCount = recentRageCount + recentDeadClickCount + recentJitterCount;
-      const commerceEventTypes = ["add_to_cart", "checkout_started", "wishlist_toggle"];
       const lastCommerceEvent = eventLog.length
         ? [...eventLog].reverse().find((e) => commerceEventTypes.includes(String(e?.type || "")))
         : null;
       const msSinceLastCommerce = lastCommerceEvent && lastCommerceEvent.ts
-        ? Math.max(0, Number(eventLog[eventLog.length - 1]?.ts || Date.now()) - Number(lastCommerceEvent.ts))
+        ? Math.max(0, referenceTs - Number(lastCommerceEvent.ts))
         : null;
-      // Full strength for 30s, then decays to 0.5 floor over 2 minutes
+      // Full strength for a short period, then decays to a configurable floor.
       const commerceMemoryDecay = msSinceLastCommerce === null
         ? 1.0
-        : msSinceLastCommerce < 30000
+        : msSinceLastCommerce < Number(this.config.commerceMemoryFullStrengthMs || 30000)
           ? 1.0
-          : Math.max(0.5, 1.0 - (msSinceLastCommerce - 30000) / 120000);
+          : Math.max(
+            Number(this.config.commerceMemoryFloor || 0.45),
+            1.0 - (
+              msSinceLastCommerce - Number(this.config.commerceMemoryFullStrengthMs || 30000)
+            ) / Math.max(1, Number(this.config.commerceMemoryDecayWindowMs || 120000))
+          );
       const sessionCommerceMemorySignal = this.clamp01(this.max([
         directCheckout ? 1 : 0,
         raw.outcomes?.checkout_started ? 0.9 : 0,
@@ -178,11 +284,23 @@
         Math.min(0.48, (purchaseCtaIntentCount / 6) * 0.48),
         Math.min(0.30, (wishlistIntentCount / 4) * 0.30)
       ]) * commerceMemoryDecay);
-      const recentDecisionSignal = this.clamp01(this.max([
+      const recentDecisionSignalCount = this.clamp01(this.max([
         recentAddToCartCount >= 1 ? 1 : 0,
         recentCheckoutCount >= 1 ? 1 : 0,
         (recentWishlistCount >= 1 && recentPriceEventCount >= 1) ? 0.8 : 0,
         (recentAddToCartCount + recentCheckoutCount) / 2
+      ]));
+      const recentDecisionSignalDecay = this.clamp01(this.max([
+        recentAddToCartDecayScore,
+        recentCheckoutDecayScore,
+        (recentWishlistDecayScore >= 0.2 && recentPriceDecayScore >= 0.2)
+          ? Math.min(recentWishlistDecayScore, recentPriceDecayScore) * 0.88
+          : 0,
+        this.clamp01(recentAddToCartDecayScore + (0.85 * recentCheckoutDecayScore))
+      ]));
+      const recentDecisionSignal = this.clamp01(this.max([
+        recentDecisionSignalDecay,
+        recentDecisionSignalCount * 0.65
       ]));
       // Decay price signal when user has since navigated to a non-price section (compare, research, gallery)
       const activeSection = String(raw.activeSection || "");
@@ -190,19 +308,51 @@
       const priceSignalDecay = /^(compare|reviews|specs|description|faq|gallery)$/.test(activeSection) && activeSectionAgeMs >= 5000
         ? Math.max(0.4, 1 - (activeSectionAgeMs - 5000) / 25000)
         : 1.0;
-      const recentPriceSignal = this.clamp01(this.max([
+      const recentPriceSignalCount = this.clamp01(this.max([
         recentPriceEventCount / 3,
         (recentPriceEventCount >= 1 && recentCommerceActionCount >= 1) ? 0.75 : 0
+      ]));
+      const recentPriceSignalDecay = this.clamp01(this.max([
+        recentPriceDecayScore,
+        (recentPriceDecayScore >= 0.2 && recentCommerceActionDecayScore >= 0.2)
+          ? Math.min(recentPriceDecayScore, recentCommerceActionDecayScore) * 0.8
+          : 0,
+        recentCompareViewDecayScore * 0.7
+      ]));
+      const recentPriceSignal = this.clamp01(this.max([
+        recentPriceSignalDecay,
+        recentPriceSignalCount * 0.55
       ]) * priceSignalDecay);
-      const recentResearchSignal = this.clamp01(this.max([
+      const recentResearchSignalCount = this.clamp01(this.max([
         recentResearchSwitchCount / 2,
         /^(reviews|specs|description)$/.test(String(raw.activeSection || "")) && Number(raw.activeSectionAgeMs || 0) >= 4000 ? 1 : 0
       ]));
-      const recentFrictionSignal = this.clamp01(this.max([
+      const activeResearchPresenceSignal = /^(reviews|specs|description)$/.test(activeSection)
+        ? this.clamp01(activeSectionAgeMs / 5000)
+        : 0;
+      const recentResearchSignalDecay = this.clamp01(this.max([
+        recentResearchDecayScore,
+        activeResearchPresenceSignal
+      ]));
+      const recentResearchSignal = this.clamp01(this.max([
+        recentResearchSignalDecay,
+        recentResearchSignalCount * 0.6
+      ]));
+      const recentFrictionSignalCount = this.clamp01(this.max([
         recentRageCount >= 1 ? 1 : 0,
         recentDeadClickCount / 2,
         recentJitterCount >= 1 ? 0.7 : 0,
         recentFrictionEventCount / 4
+      ]));
+      const recentFrictionSignalDecay = this.clamp01(this.max([
+        recentRageDecayScore,
+        recentDeadClickDecayScore,
+        recentJitterDecayScore,
+        this.clamp01(recentRageDecayScore + (0.45 * recentDeadClickDecayScore) + (0.3 * recentJitterDecayScore))
+      ]));
+      const recentFrictionSignal = this.clamp01(this.max([
+        recentFrictionSignalDecay,
+        recentFrictionSignalCount * 0.7
       ]));
 
       const scrolledPercentage = this.clamp01(Number(raw.maxScrollPercentage || 0));
@@ -353,6 +503,22 @@
           recentAddToCartCount: Math.round(recentAddToCartCount),
           recentCheckoutCount: Math.round(recentCheckoutCount),
           recentCommerceActionCount: Math.round(recentCommerceActionCount),
+          recentDecisionSignalCount: this.round(recentDecisionSignalCount),
+          recentDecisionSignalDecay: this.round(recentDecisionSignalDecay),
+          recentPriceSignalCount: this.round(recentPriceSignalCount),
+          recentPriceSignalDecay: this.round(recentPriceSignalDecay),
+          recentResearchSignalCount: this.round(recentResearchSignalCount),
+          recentResearchSignalDecay: this.round(recentResearchSignalDecay),
+          recentFrictionSignalCount: this.round(recentFrictionSignalCount),
+          recentFrictionSignalDecay: this.round(recentFrictionSignalDecay),
+          recentCommerceActionDecay: this.round(recentCommerceActionDecayScore),
+          recentPriceDecay: this.round(recentPriceDecayScore),
+          recentResearchDecay: this.round(recentResearchDecayScore),
+          recentFrictionDecay: this.round(this.max([
+            recentRageDecayScore,
+            recentDeadClickDecayScore,
+            recentJitterDecayScore
+          ])),
           sessionCommerceMemorySignal: this.round(sessionCommerceMemorySignal),
           commerceMemoryDecay: this.round(commerceMemoryDecay),
           msSinceLastCommerce: msSinceLastCommerce !== null ? Math.round(msSinceLastCommerce) : null,
@@ -360,6 +526,12 @@
           recentRageCount: Math.round(recentRageCount),
           recentDeadClickCount: Math.round(recentDeadClickCount),
           recentJitterCount: Math.round(recentJitterCount),
+          recentAddToCartDecay: this.round(recentAddToCartDecayScore),
+          recentCheckoutDecay: this.round(recentCheckoutDecayScore),
+          recentWishlistDecay: this.round(recentWishlistDecayScore),
+          recentRageDecay: this.round(recentRageDecayScore),
+          recentDeadClickDecay: this.round(recentDeadClickDecayScore),
+          recentJitterDecay: this.round(recentJitterDecayScore),
           recentFrictionEventCount: Math.round(recentFrictionEventCount),
           cartAbandons: Math.round(cartAbandons),
           directCheckout,

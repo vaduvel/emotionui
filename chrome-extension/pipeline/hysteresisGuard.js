@@ -15,8 +15,22 @@
           SPOTLIGHT_MODE: 30000
         },
         requiredStableHits: 2,
+        requiredStableHitsByMode: {
+          DESIGN_OXYGEN: 1,
+          SPOTLIGHT_MODE: 1,
+          EXPRESS_LANE: 1
+        },
         minConfidenceDelta: 0.06,
+        minConfidenceDeltaByMode: {
+          DESIGN_OXYGEN: 0.03,
+          SPOTLIGHT_MODE: 0.04,
+          EXPRESS_LANE: 0.04
+        },
         forceConfidenceDelta: 0.12,
+        recoveryHoldMsByMode: {
+          DESIGN_OXYGEN: 8000,
+          SPOTLIGHT_MODE: 9000
+        },
         coldStartObserveMs: 5000,
         coldStartInterveneMs: 6500,
         commercialToResearchDwellMs: 3500,
@@ -161,9 +175,17 @@
       const effectiveDwellMs = modeDwellMap[targetMode] != null
         ? Number(modeDwellMap[targetMode])
         : Number(this.config.minModeDwellMs || 9000);
+      const stableHitsMap = this.config.requiredStableHitsByMode || {};
+      const effectiveStableHits = stableHitsMap[targetMode] != null
+        ? Number(stableHitsMap[targetMode])
+        : Number(this.config.requiredStableHits || 2);
+      const confidenceDeltaMap = this.config.minConfidenceDeltaByMode || {};
+      const effectiveMinConfidenceDelta = confidenceDeltaMap[targetMode] != null
+        ? Number(confidenceDeltaMap[targetMode])
+        : Number(this.config.minConfidenceDelta || 0.06);
       const dwellSatisfied = timeSinceLastModeChangeMs >= effectiveDwellMs;
-      const stableEnough = Number(this.pending.hits || 0) >= Number(this.config.requiredStableHits || 2);
-      const confidenceClear = margin >= Number(this.config.minConfidenceDelta || 0.06);
+      const stableEnough = Number(this.pending.hits || 0) >= effectiveStableHits;
+      const confidenceClear = margin >= effectiveMinConfidenceDelta;
       const commercialToResearchPromotion =
         /^(PRICE_ALERT_MODE|NEGOTIATOR_MODE|EXPRESS_LANE)$/.test(prevMode) &&
         cleanCandidate.resolved_mode === "RESEARCH_MODE" &&
@@ -185,6 +207,34 @@
         cleanCandidate.resolved_rule_id === "R_EXPRESS" ||
         cleanCandidate.resolved_rule_id === "R_FRUSTRATION" ||
         candidateConfidence >= (prevConfidence + Number(this.config.forceConfidenceDelta || 0.12));
+      const recoveryHoldMap = this.config.recoveryHoldMsByMode || {};
+      const negativeRecoveryHoldMs = recoveryHoldMap[prevMode] != null
+        ? Number(recoveryHoldMap[prevMode])
+        : 0;
+      const protectedNegativeExit =
+        negativeRecoveryHoldMs > 0 &&
+        prevMode !== targetMode &&
+        timeSinceLastModeChangeMs < negativeRecoveryHoldMs &&
+        !forceSwitch &&
+        !commercialToResearchPromotion &&
+        candidateConfidence < (prevConfidence + Number(this.config.forceConfidenceDelta || 0.12));
+
+      if (protectedNegativeExit) {
+        return {
+          ...prev,
+          was_blocked: true,
+          blocked_reason: "negative_state_recovery_hold",
+          hysteresis_reason: "kept_previous_decision",
+          time_since_last_mode_change_ms: timeSinceLastModeChangeMs,
+          previous_mode: prevMode,
+          previous_rule_id: prevRuleId,
+          candidate_mode: cleanCandidate.resolved_mode,
+          candidate_policy: cleanCandidate.policy,
+          candidate_rule_id: cleanCandidate.resolved_rule_id,
+          pending_candidate_hits: Number(this.pending.hits || 1),
+          mode_history: this.snapshotHistory()
+        };
+      }
 
       if (dwellSatisfied || stableEnough || confidenceClear || forceSwitch || coldStartObservePromotion || coldStartIntervenePromotion || commercialToResearchPromotion) {
         return this.accept(cleanCandidate, {
