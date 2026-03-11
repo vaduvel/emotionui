@@ -14,6 +14,9 @@ const POLICY_ACTIONS = ["SILENT", "OBSERVE", "INTERVENE"];
 const CONFIG = {
   policy: {
     epsilon: 0.08,
+    epsilonStart: 0.3,
+    epsilonMin: 0.05,
+    epsilonDecayPerSample: 0.992,
     softmaxTemperature: 1.1,
     minConfidenceObserve: 0.34,
     minConfidenceIntervene: 0.5,
@@ -45,6 +48,9 @@ const CONFIG = {
     checkoutStarted: 0.22,
     purchaseCompleted: 0.75,
     reviewRead: 0.2,
+    qualifiedResearch: 0.06,
+    sectionExploration: 0.05,
+    toleratedExposure: 0.04,
     interventionAccepted: 0.08,
     timelyInterventionBonus: 0.06,
     cartAbandon: -0.25,
@@ -131,6 +137,9 @@ class RewardCalculator {
       checkoutStarted: 0.22,
       purchaseCompleted: 0.75,
       reviewRead: 0.2,
+      qualifiedResearch: 0.06,
+      sectionExploration: 0.05,
+      toleratedExposure: 0.04,
       interventionAccepted: 0.08,
       timelyInterventionBonus: 0.06,
       cartAbandon: -0.25,
@@ -161,6 +170,16 @@ class RewardCalculator {
     const chosenPolicy = String(decisionMeta.policy || "SILENT").toUpperCase();
     const exposureDelayMs = Number(attribution.exposure_delay_ms || 0);
     const rewardWindowMs = Number(attribution.reward_window_ms || 0);
+    const infoZoneUniqueCount = Number(context.infoZoneUniqueCount || 0);
+    const infoZoneDwellSec = Number(context.infoZoneDwellSec || 0);
+    const sectionSwitches = Number(context.sectionSwitches || 0);
+    const scrollDepthPct = Number(context.scrollDepthPct || 0);
+    const sessionQualityScore = Number(
+      context.sessionQualityScore ??
+      outcomeDetail.session_quality_score ??
+      0
+    );
+    const interventionExposed = Boolean(outcomeDetail.intervention_exposed);
 
     let reward = 0;
     if (outcomeDetail.added_to_wishlist) reward += this.config.wishlist;
@@ -168,6 +187,12 @@ class RewardCalculator {
     if (outcomeDetail.checkout_started) reward += this.config.checkoutStarted;
     if (outcomeDetail.purchase_completed) reward += this.config.purchaseCompleted;
     if (outcomeDetail.review_dwell_over_10s) reward += this.config.reviewRead;
+    if (sessionQualityScore >= 60 && infoZoneUniqueCount >= 2 && infoZoneDwellSec >= 20) {
+      reward += this.config.qualifiedResearch;
+    }
+    if (scrollDepthPct >= 65 && sectionSwitches >= 3) {
+      reward += this.config.sectionExploration;
+    }
     if (outcomeDetail.intervention_accepted) reward += this.config.interventionAccepted;
     if (cartAbandons > 0 && !outcomeDetail.checkout_started && !outcomeDetail.purchase_completed) {
       reward += this.config.cartAbandon;
@@ -185,6 +210,10 @@ class RewardCalculator {
       Boolean(outcomeDetail.purchase_completed) ||
       Boolean(outcomeDetail.review_dwell_over_10s) ||
       Boolean(outcomeDetail.intervention_accepted);
+
+    if (interventionExposed && !outcomeDetail.intervention_closed && !positiveOutcome && exposureDelayMs >= 10000) {
+      reward += this.config.toleratedExposure;
+    }
 
     if ((chosenPolicy === "INTERVENE" || chosenPolicy === "OBSERVE") && rewardWindowMs > 0 && reward > 0) {
       const decayStartMs = Number(this.config.rewardDecayStartMs || 10000);
@@ -446,6 +475,21 @@ class PolicyModel {
     return features;
   }
 
+  static getEffectiveEpsilon(config = CONFIG.policy, trainedSamples = 0) {
+    if (Number.isFinite(Number(config?.epsilonOverride))) {
+      return Math.max(0, Number(config.epsilonOverride || 0));
+    }
+
+    const minSamplesForModelOnly = Math.max(0, Number(config?.minSamplesForModelOnly || 80));
+    if (Number(trainedSamples || 0) < minSamplesForModelOnly) return 0;
+
+    const epsilonStart = Math.max(0, Number(config?.epsilonStart ?? config?.epsilon ?? 0.08));
+    const epsilonMin = Math.max(0, Number(config?.epsilonMin ?? 0.05));
+    const epsilonDecayPerSample = Math.min(1, Math.max(0.0001, Number(config?.epsilonDecayPerSample ?? 0.992)));
+    const decayed = epsilonStart * Math.pow(epsilonDecayPerSample, Math.max(0, Number(trainedSamples || 0) - minSamplesForModelOnly));
+    return Number(Math.max(epsilonMin, decayed).toFixed(4));
+  }
+
   static linear(weights, x) {
     let z = Number(weights.b || 0);
     for (const [key, value] of Object.entries(x)) {
@@ -615,6 +659,7 @@ class PolicyModel {
   static decide(model, rawFeatures, config = CONFIG.policy, decisionContext = {}) {
     const safeModel = PolicyModel.ensureShape(model);
     const x = PolicyModel.normalizeFeatures(rawFeatures);
+    const effectiveEpsilon = PolicyModel.getEffectiveEpsilon(config, safeModel.trained_samples);
 
     if (safeModel.trained_samples < Number(config.minSamplesForModelOnly || 80)) {
       const heuristic = PolicyModel.heuristicBootstrapDecision(rawFeatures || {}, decisionContext || {});
@@ -626,6 +671,7 @@ class PolicyModel {
         policy_probs: heuristic.policy_probs,
         exploration: false,
         abstained: false,
+        effective_epsilon: 0,
         state: decisionContext.stateLabel || DEFAULT_CANONICAL_STATE,
         action: heuristic.policy,
         state_label: decisionContext.stateLabel || DEFAULT_CANONICAL_STATE,
@@ -646,7 +692,7 @@ class PolicyModel {
     const topPolicy = ranked[0]?.[0] || "SILENT";
     const topConfidence = Number(ranked[0]?.[1] || 0);
 
-    let { policy, exploration } = PolicyModel.chooseWithExploration(ranked, Number(config.epsilon || 0));
+    let { policy, exploration } = PolicyModel.chooseWithExploration(ranked, effectiveEpsilon);
     let reason = exploration ? "epsilon_exploration" : "policy_argmax";
 
     if (policy === "INTERVENE" && topConfidence < Number(config.minConfidenceIntervene || 0.5)) {
@@ -668,6 +714,7 @@ class PolicyModel {
       reason,
       policy_probs: probs,
       exploration,
+      effective_epsilon: effectiveEpsilon,
       abstained: policy === "SILENT" && topPolicy !== "SILENT",
       state: decisionContext.stateLabel || DEFAULT_CANONICAL_STATE,
       action: policy,
@@ -682,7 +729,7 @@ class PolicyModel {
   static learn(model, rawFeatures, chosenPolicy, reward, config = CONFIG.policy) {
     const safeModel = PolicyModel.ensureShape(model);
     const x = PolicyModel.normalizeFeatures(rawFeatures);
-    const decision = PolicyModel.decide(safeModel, x, { ...config, epsilon: 0 });
+    const decision = PolicyModel.decide(safeModel, x, { ...config, epsilonOverride: 0 });
 
     const policy = POLICY_ACTIONS.includes(chosenPolicy) ? chosenPolicy : "SILENT";
     const chosenProb = Number(decision.policy_probs[policy] || 0.001);
@@ -952,6 +999,7 @@ runtimeApi.onMessage.addListener((message, sender, sendResponse) => {
           reward,
           trained_samples: model.trained_samples || 0,
           running_reward: model.running_reward || 0,
+          effective_epsilon: PolicyModel.getEffectiveEpsilon(CONFIG.policy, model.trained_samples || 0),
           skipped_training: true,
           skipped_reason: "experiment_control_holdout"
         });
@@ -965,7 +1013,8 @@ runtimeApi.onMessage.addListener((message, sender, sendResponse) => {
         ok: true,
         reward,
         trained_samples: updated.trained_samples || 0,
-        running_reward: updated.running_reward || 0
+        running_reward: updated.running_reward || 0,
+        effective_epsilon: PolicyModel.getEffectiveEpsilon(CONFIG.policy, updated.trained_samples || 0)
       });
     });
     return true;

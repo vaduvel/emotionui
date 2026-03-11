@@ -42,6 +42,7 @@ function setStats(stats) {
   document.getElementById("challengerPolicy").textContent = stats?.challenger_policy
     ? `${stats.challenger_policy} (${stats?.challenger_source || "shadow"})`
     : "none";
+  document.getElementById("effectiveEpsilon").textContent = String(stats?.effective_epsilon ?? 0);
   document.getElementById("mlSamples").textContent = String(stats?.ml_samples ?? 0);
   document.getElementById("mlAbstain").textContent = stats?.ml_abstained ? "Yes" : "No";
   document.getElementById("baseline").textContent = stats?.baseline_active ? "Active" : "Fallback";
@@ -58,6 +59,7 @@ function setStats(stats) {
   document.getElementById("reversalDwellRatio").textContent = String(stats?.reversal_with_dwell_ratio ?? 0);
   document.getElementById("pageDensity").textContent = String(stats?.page_density_score ?? 0);
   document.getElementById("activeSection").textContent = stats?.active_section || "-";
+  document.getElementById("explanation").textContent = stats?.user_explanation_summary || "none";
   document.getElementById("uiContamination").textContent = stats?.was_ui_contaminated ? `${stats?.filtered_extension_ui_event_count || 0}` : "No";
   document.getElementById("cooldown").textContent = stats?.dismiss_cooldown_active
     ? `${Math.max(0, Math.round(Number(stats?.dismiss_cooldown_remaining_ms || 0) / 1000))}s`

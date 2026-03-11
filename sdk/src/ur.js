@@ -163,9 +163,10 @@ export class URWidget {
 
     const label = this.widget.querySelector('.emo-ur-label');
     const desc = this.widget.querySelector('.emo-ur-desc');
+    const explanation = result.explanation || result.user_explanation_summary || result.description;
 
     label.textContent = `Adapted: ${result.label}`;
-    desc.textContent = result.description;
+    desc.textContent = explanation;
 
     this.currentState = result.state;
     this.show();

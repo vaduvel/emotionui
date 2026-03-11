@@ -48,6 +48,44 @@
       return Number(n.toFixed(digits));
     }
 
+    adjustScore(scores, label, delta) {
+      if (!label || !Number.isFinite(Number(delta))) return;
+      scores[label] = this.clamp01(Number(scores[label] || 0) + Number(delta || 0));
+    }
+
+    applyPairDisambiguators(scores = {}, reasonAnalysis = {}) {
+      const detectedCodes = new Set([
+        ...(Array.isArray(reasonAnalysis?.pair_disambiguators) ? reasonAnalysis.pair_disambiguators : []),
+        ...(Array.isArray(reasonAnalysis?.detected) ? reasonAnalysis.detected.map((item) => item?.code) : [])
+      ].filter(Boolean));
+
+      if (detectedCodes.has("RESEARCH_VALIDATION_LOOP")) {
+        this.adjustScore(scores, LABELS.DEEP_RESEARCH, 0.08);
+        this.adjustScore(scores, LABELS.EXPLORING, -0.06);
+      }
+
+      if (detectedCodes.has("PRICE_TRUST_LOOP")) {
+        this.adjustScore(scores, LABELS.REASSURANCE_SEEKING, 0.1);
+        this.adjustScore(scores, LABELS.PRICE_SENSITIVE, -0.05);
+        this.adjustScore(scores, LABELS.DECISION_READY, -0.04);
+      }
+
+      if (detectedCodes.has("VARIANT_PRICE_COMPARISON")) {
+        this.adjustScore(scores, LABELS.PRICE_SENSITIVE, 0.09);
+        this.adjustScore(scores, LABELS.REASSURANCE_SEEKING, -0.05);
+      }
+
+      if (detectedCodes.has("OVERLOAD_SCAN_PATTERN")) {
+        this.adjustScore(scores, LABELS.OVERLOADED, 0.1);
+        this.adjustScore(scores, LABELS.FRUSTRATED, -0.06);
+      }
+
+      if (detectedCodes.has("FRICTION_ESCAPE_SPIKE")) {
+        this.adjustScore(scores, LABELS.FRUSTRATED, 0.1);
+        this.adjustScore(scores, LABELS.OVERLOADED, -0.08);
+      }
+    }
+
     buildReasons(label, raw, featurePack, pageContext) {
       const ctx = featurePack?.context || {};
       const derived = featurePack?.derived || {};
@@ -320,6 +358,7 @@
       for (const stateLabel of ORDER) {
         scores[stateLabel] = this.clamp01(Number(scores[stateLabel] || 0) + Number(primaryAdjustments[stateLabel] || 0));
       }
+      this.applyPairDisambiguators(scores, reasonAnalysis);
 
       if (recentCommitmentReengage && !researchStillActive && !researchResurgence) {
         scores[LABELS.DECISION_READY] = this.clamp01(

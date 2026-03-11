@@ -97,6 +97,7 @@
   let lastFeaturePack = null;
   let lastPdpGate = createDefaultPdpGate();
   let lastPageContext = createDefaultPageContext();
+  let lastReasonAnalysis = null;
   let lastStateClassification = createDefaultStateClassification();
   let lastDecision = createColdDecision();
   const USER_PROFILE_KEY = "emotionui_user_profile_v1";
@@ -132,7 +133,21 @@
       collectionMode: "unsure_passive",
       score: 0,
       reasons: ["uninitialized"],
-      metrics: {}
+      signal_reasons: [],
+      penalty_reasons: [],
+      metrics: {},
+      audit: {
+        host: String(window.location.hostname || ""),
+        path: String(window.location.pathname || ""),
+        document_ready_state: String(document.readyState || "loading"),
+        verdict: "UNSURE",
+        collection_mode: "unsure_passive",
+        score: 0,
+        signal_score: 0,
+        listing_penalty: 0,
+        signal_reasons: [],
+        penalty_reasons: []
+      }
     };
   }
 
@@ -369,8 +384,24 @@
 
   const FALLBACK_FEATURE_PACK = { normalized: {}, derived: {}, context: {} };
   const FALLBACK_PAGE_CONTEXT = normalizePageContextValue({});
-  const FALLBACK_REASON_ANALYSIS = { primary_score_adjustments: {}, top_reason_codes: [], families: [], emotion_tag: "CALM", affect_tag: "CALM", intent_tag: "EXPLORING", constraint_tags: [], emotion_scores: {}, intent_scores: {}, constraint_scores: {} };
+  const FALLBACK_REASON_ANALYSIS = {
+    primary_score_adjustments: {},
+    top_reason_codes: [],
+    pair_disambiguators: [],
+    families: [],
+    emotion_tag: "CALM",
+    affect_tag: "CALM",
+    intent_tag: "EXPLORING",
+    constraint_tags: [],
+    emotion_scores: {},
+    intent_scores: {},
+    constraint_scores: {},
+    user_explanation_title: "Why the page adapted",
+    user_explanation_summary: "The page is adapting to the signals you are giving right now.",
+    user_explanation_details: []
+  };
   const FALLBACK_STATE_CLASSIFICATION = { label: "CALM_BROWSING", primary_state: "CALM_BROWSING", confidence: 0, scores: {}, reasons: [], emotion_tag: "CALM", affect_tag: "CALM", intent_tag: "EXPLORING", constraint_tags: [], reason_codes: [], reason_families: [] };
+  lastReasonAnalysis = FALLBACK_REASON_ANALYSIS;
 
   function computeLiveBundle(options = {}) {
     const stageTimings = options.stageTimings || null;
@@ -387,6 +418,22 @@
 
     let stateClassification = FALLBACK_STATE_CLASSIFICATION;
     try { stateClassification = measureStage(stageTimings, "state_classification", () => stateClassifier.classify(rawSnapshot, featurePack, pageContext, reasonAnalysis)); } catch (e) { /* use fallback */ }
+
+    try {
+      const explanation = reasonCodeEngine.buildUserExplanation({
+        topReasonCodes: reasonAnalysis.top_reason_codes || [],
+        raw: rawSnapshot,
+        featurePack,
+        pageContext,
+        stateClassification
+      });
+      reasonAnalysis = {
+        ...reasonAnalysis,
+        user_explanation_title: explanation.title,
+        user_explanation_summary: explanation.summary,
+        user_explanation_details: explanation.details
+      };
+    } catch (e) { /* explanation fallback stays intact */ }
 
     return { rawSnapshot, featurePack, pageContext, stateClassification, reasonAnalysis };
   }
@@ -686,10 +733,13 @@
     return mapResolvedUi(decision, rawSnapshot, featurePack, pageContext, stateClassification, stageTimings);
   }
 
-  function finalizeDecisionEnvelope(decision, rawSnapshot, featurePack, pageContext, stateClassification, extra = {}, stageTimings = null) {
+  function finalizeDecisionEnvelope(decision, rawSnapshot, featurePack, pageContext, stateClassification, reasonAnalysis = FALLBACK_REASON_ANALYSIS, extra = {}, stageTimings = null) {
     const resolved = mapResolvedUi(decision, rawSnapshot, featurePack, pageContext, stateClassification, stageTimings);
     const previousResolved = getResolvedDecision(lastDecision, rawSnapshot, featurePack, lastPageContext, lastStateClassification, null);
     const normalizedPageContext = normalizePageContextValue(pageContext);
+    const gateAudit = (lastPdpGate && typeof lastPdpGate.audit === "object")
+      ? lastPdpGate.audit
+      : createDefaultPdpGate().audit;
 
     return {
       ...decision,
@@ -724,14 +774,21 @@
       constraint_scores: stateClassification.constraint_scores || {},
       reason_codes: Array.isArray(stateClassification.reason_codes) ? stateClassification.reason_codes : [],
       reason_families: Array.isArray(stateClassification.reason_families) ? stateClassification.reason_families : [],
+      pair_disambiguators: Array.isArray(reasonAnalysis.pair_disambiguators) ? reasonAnalysis.pair_disambiguators : [],
       pdp_gate_verdict: String(lastPdpGate.verdict || "UNSURE"),
       pdp_gate_score: Number(lastPdpGate.score || 0),
       pdp_gate_reasons: Array.isArray(lastPdpGate.reasons) ? lastPdpGate.reasons : [],
+      pdp_gate_signal_reasons: Array.isArray(lastPdpGate.signal_reasons) ? lastPdpGate.signal_reasons : [],
+      pdp_gate_penalty_reasons: Array.isArray(lastPdpGate.penalty_reasons) ? lastPdpGate.penalty_reasons : [],
       pdp_gate_metrics: lastPdpGate.metrics || {},
+      pdp_gate_audit: gateAudit,
       page_context: normalizedPageContext.summary,
       page_context_metrics: normalizedPageContext.metrics,
       page_context_hints: normalizedPageContext.hints,
       page_context_coverage: Number(normalizedPageContext.coverage || 0),
+      user_explanation_title: reasonAnalysis.user_explanation_title || "Why the page adapted",
+      user_explanation_summary: reasonAnalysis.user_explanation_summary || "The page is adapting to the signals you are giving right now.",
+      user_explanation_details: Array.isArray(reasonAnalysis.user_explanation_details) ? reasonAnalysis.user_explanation_details : [],
       previous_mode: previousResolved.mode || null,
       previous_state: lastDecision.state_label || lastStateClassification.label || null,
       previous_rule_id: previousResolved.rule_id || null,
@@ -748,7 +805,7 @@
     return outcomeLogger.buildAttributionContext(rawSnapshot, decision);
   }
 
-  function createPassiveCollectDecision(rawSnapshot, featurePack, pageContext, stateClassification, stageTimings = null) {
+  function createPassiveCollectDecision(rawSnapshot, featurePack, pageContext, stateClassification, reasonAnalysis = FALLBACK_REASON_ANALYSIS, stageTimings = null) {
     const passiveEnvelope = finalizeDecisionEnvelope(
       {
         ...createColdDecision("pdp_unsure_passive_collect"),
@@ -763,6 +820,7 @@
       featurePack,
       pageContext,
       stateClassification,
+      reasonAnalysis,
       {
         was_override: true,
         override_from: "ADAPTIVE_RUNTIME",
@@ -863,6 +921,9 @@
           challenger_policy: lastDecision.challenger_policy || null,
           challenger_confidence: Number(lastDecision.challenger_confidence || 0),
           challenger_source: lastDecision.challenger_source || null,
+          effective_epsilon: Number(lastDecision.effective_epsilon || 0),
+          user_explanation_summary: lastDecision.user_explanation_summary || FALLBACK_REASON_ANALYSIS.user_explanation_summary,
+          user_explanation_details: Array.isArray(lastDecision.user_explanation_details) ? lastDecision.user_explanation_details : [],
           baseline_active: false,
           suppressed_modes: [],
           derived_scores: { f: 0, h: 0, r: 0, p: 0 },
@@ -876,6 +937,9 @@
           active_section: "none",
           was_ui_contaminated: false,
           filtered_extension_ui_event_count: 0,
+          pdp_gate_signal_reasons: Array.isArray(lastPdpGate.signal_reasons) ? lastPdpGate.signal_reasons : [],
+          pdp_gate_penalty_reasons: Array.isArray(lastPdpGate.penalty_reasons) ? lastPdpGate.penalty_reasons : [],
+          pdp_gate_audit: lastPdpGate.audit || createDefaultPdpGate().audit,
           collection_mode: "blocked"
         };
         await policyClient.updateStats(stats);
@@ -932,8 +996,11 @@
         challenger_policy: decision.challenger_policy || null,
         challenger_confidence: Number(decision.challenger_confidence || 0),
         challenger_source: decision.challenger_source || null,
+        effective_epsilon: Number(decision.effective_epsilon || 0),
         previous_mode: decision.previous_mode || null,
         override_reason: decision.override_reason || "none",
+        user_explanation_summary: decision.user_explanation_summary || lastReasonAnalysis?.user_explanation_summary || FALLBACK_REASON_ANALYSIS.user_explanation_summary,
+        user_explanation_details: Array.isArray(decision.user_explanation_details) ? decision.user_explanation_details : (lastReasonAnalysis?.user_explanation_details || []),
         dismiss_cooldown_active: Boolean(decision.dismiss_cooldown_active),
         dismiss_cooldown_remaining_ms: Number(decision.dismiss_cooldown_remaining_ms || 0),
         exposure_delay_ms: Number(attribution.exposure_delay_ms || 0),
@@ -955,7 +1022,10 @@
         page_density_score: Number(decision.page_context_metrics?.pageDensityScore || lastPageContext.metrics?.pageDensityScore || 0),
         active_section: String(featurePack.context.activeSection || "none"),
         was_ui_contaminated: Number(rawSnapshot.extensionUi?.filteredEvents || 0) > 0,
-        filtered_extension_ui_event_count: Number(rawSnapshot.extensionUi?.filteredEvents || 0)
+        filtered_extension_ui_event_count: Number(rawSnapshot.extensionUi?.filteredEvents || 0),
+        pdp_gate_signal_reasons: Array.isArray(decision.pdp_gate_signal_reasons) ? decision.pdp_gate_signal_reasons : (lastPdpGate.signal_reasons || []),
+        pdp_gate_penalty_reasons: Array.isArray(decision.pdp_gate_penalty_reasons) ? decision.pdp_gate_penalty_reasons : (lastPdpGate.penalty_reasons || []),
+        pdp_gate_audit: decision.pdp_gate_audit || lastPdpGate.audit || createDefaultPdpGate().audit
       };
 
       await policyClient.updateStats(stats);
@@ -970,6 +1040,7 @@
     try {
       if (pageCollectionMode === "blocked") {
         lastPageContext = createDefaultPageContext();
+        lastReasonAnalysis = FALLBACK_REASON_ANALYSIS;
         lastStateClassification = createDefaultStateClassification();
         lastDecision = {
           ...createColdDecision("page_not_trackable"),
@@ -990,12 +1061,13 @@
 
       const cycleStartMs = performance.now();
       const stageTimings = {};
-      const { rawSnapshot, featurePack, pageContext, stateClassification } = computeLiveBundle({ stageTimings });
+      const { rawSnapshot, featurePack, pageContext, stateClassification, reasonAnalysis } = computeLiveBundle({ stageTimings });
       const cooldownInfo = await getDomainDismissCooldown(rawSnapshot.site);
       const previousResolved = getResolvedDecision(lastDecision, rawSnapshot, featurePack, pageContext, stateClassification);
 
       lastFeaturePack = featurePack;
       lastPageContext = pageContext;
+      lastReasonAnalysis = reasonAnalysis;
       lastStateClassification = stateClassification;
 
       if (pageCollectionMode === "unsure_passive") {
@@ -1004,6 +1076,7 @@
           featurePack,
           pageContext,
           stateClassification,
+          reasonAnalysis,
           stageTimings
         );
         passiveDecision = {
@@ -1095,6 +1168,7 @@
         featurePack,
         pageContext,
         stateClassification,
+        reasonAnalysis,
         {
           was_override: safetyOverrode,
           override_from: safetyOverrode ? modelPolicy : null,
@@ -1171,7 +1245,7 @@
   }
 
   function buildSessionPayload(outcomeReason) {
-    const { rawSnapshot, featurePack, pageContext, stateClassification } = computeLiveBundle();
+    const { rawSnapshot, featurePack, pageContext, stateClassification, reasonAnalysis } = computeLiveBundle();
     const decision = lastDecision;
     return outcomeLogger.buildSessionPayload({
       outcomeReason,
@@ -1179,6 +1253,7 @@
       featurePack,
       pageContext,
       stateClassification,
+      reasonAnalysis,
       decision,
       lastPdpGate,
       navigatorUserAgent: navigator.userAgent,
@@ -1207,6 +1282,12 @@
             cartAbandons: payload.cart_abandons,
             timeOnPriceSec: payload.time_on_price,
             directCheckout: payload.direct_checkout,
+            scrollDepthPct: Number(payload.scroll_depth || 0),
+            infoZoneUniqueCount: Number(featurePack.context.visitedCount || 0),
+            infoZoneDwellSec: Number(featurePack.context.infoZoneDwellSec || 0),
+            sectionSwitches: Number(rawSnapshot.sectionSwitches || 0),
+            reviewDwellSec: Number(featurePack.context.reviewDwellSec || 0),
+            sessionQualityScore: Number(payload.session_quality_score || 0),
             attribution,
             decisionMeta: {
               policy: lastDecision.policy,
@@ -1217,7 +1298,8 @@
               experimentKey: lastDecision.experiment_key || null,
               experimentVariant: lastDecision.experiment_variant || "adaptive",
               experimentRuntimeMode: lastDecision.experiment_runtime_mode || "adaptive",
-              experimentConfigVersion: lastDecision.experiment_config_version || null
+              experimentConfigVersion: lastDecision.experiment_config_version || null,
+              effectiveEpsilon: Number(lastDecision.effective_epsilon || 0)
             }
           }
         );
@@ -1252,6 +1334,7 @@
     collector = createCollector();
     lastFeaturePack = null;
     lastPageContext = createDefaultPageContext();
+    lastReasonAnalysis = FALLBACK_REASON_ANALYSIS;
     lastStateClassification = createDefaultStateClassification();
     lastDecision = createColdDecision("route_change_reset");
     hysteresisGuard.reset();
@@ -1372,6 +1455,7 @@
     if (message.type === "EMOTIONUI_MODE_RESET") {
       resolver.resetToSilent();
       hysteresisGuard.reset();
+      lastReasonAnalysis = FALLBACK_REASON_ANALYSIS;
       lastDecision = {
         ...createColdDecision("manual_reset"),
         trained_samples: Number(lastDecision.trained_samples || 0),
@@ -1432,6 +1516,9 @@
         state_contract_mode: lastDecision.state_contract_mode || lastDecision.mapped_mode || resolved.mode,
         state_contract_intervention_type: lastDecision.state_contract_intervention_type || lastDecision.mapped_intervention_type || resolved.intervention_type || "none",
         state_contract_reason_families: Array.isArray(lastDecision.state_contract_reason_families) ? lastDecision.state_contract_reason_families : [],
+        effective_epsilon: Number(lastDecision.effective_epsilon || 0),
+        user_explanation_summary: lastDecision.user_explanation_summary || lastReasonAnalysis?.user_explanation_summary || FALLBACK_REASON_ANALYSIS.user_explanation_summary,
+        user_explanation_details: Array.isArray(lastDecision.user_explanation_details) ? lastDecision.user_explanation_details : (lastReasonAnalysis?.user_explanation_details || []),
         previous_mode: lastDecision.previous_mode || null,
         override_reason: lastDecision.override_reason || "none",
         dismiss_cooldown_active: Boolean(lastDecision.dismiss_cooldown_active),
@@ -1454,6 +1541,9 @@
         page_context_coverage: Number(lastDecision.page_context_coverage || lastPageContext.coverage || 0),
         page_density_score: Number(lastDecision.page_context_metrics?.pageDensityScore || lastPageContext.metrics?.pageDensityScore || 0),
         active_section: String(featurePack.context.activeSection || "none"),
+        pdp_gate_signal_reasons: Array.isArray(lastDecision.pdp_gate_signal_reasons) ? lastDecision.pdp_gate_signal_reasons : (lastPdpGate.signal_reasons || []),
+        pdp_gate_penalty_reasons: Array.isArray(lastDecision.pdp_gate_penalty_reasons) ? lastDecision.pdp_gate_penalty_reasons : (lastPdpGate.penalty_reasons || []),
+        pdp_gate_audit: lastDecision.pdp_gate_audit || lastPdpGate.audit || createDefaultPdpGate().audit,
         collection_mode: lastDecision.collection_mode || pageCollectionMode
       });
       return;

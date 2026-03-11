@@ -34,6 +34,8 @@
       const search = this.normalizeText(window.location.search || "");
       const documentReadyState = document.readyState;
       const reasons = [];
+      const signalReasons = [];
+      const penaltyReasons = [];
 
       const blockedHostPattern = /(accounts\.google\.com|myaccount\.google\.com|mail\.google\.com|calendar\.google\.com|docs\.google\.com|drive\.google\.com|kaggle\.com)/i;
       if (blockedHostPattern.test(host)) {
@@ -41,7 +43,7 @@
           host,
           path,
           documentReadyState
-        });
+        }, { signalReasons, penaltyReasons: ["blocked_host"] });
       }
 
       const nonProductPathPattern = /(\/cart|\/cos|\/checkout|\/payment|\/order|\/account|\/login|\/register|\/wishlist|\/favorite|\/search|\/category|\/catalog|\/help|\/support|\/datasets)\b/i;
@@ -50,7 +52,7 @@
           host,
           path,
           documentReadyState
-        });
+        }, { signalReasons, penaltyReasons: ["blocked_path"] });
       }
 
       const productPathStrong =
@@ -68,6 +70,10 @@
             path,
             documentReadyState,
             productPathStrong
+          },
+          {
+            signalReasons: productPathStrong ? ["product_path_strong", "dom_loading_fast_accept"] : [],
+            penaltyReasons: productPathStrong ? [] : ["dom_loading_wait_for_signals"]
           }
         );
       }
@@ -147,12 +153,30 @@
       score += strongPdpCandidate ? 0.08 : 0;
       score += productLinkCount <= 3 ? 0.08 : 0;
 
-      if (productPathStrong) reasons.push("product_path_strong");
-      if (structuredProduct) reasons.push("structured_product_signal");
-      if (priceMarker) reasons.push("price_marker_present");
-      if (hasCommerceAction) reasons.push("commerce_action_present");
-      if (hasInfoTabs) reasons.push("info_tabs_present");
-      if (productHeading && !genericHeading) reasons.push("product_heading_present");
+      if (productPathStrong) {
+        reasons.push("product_path_strong");
+        signalReasons.push("product_path_strong");
+      }
+      if (structuredProduct) {
+        reasons.push("structured_product_signal");
+        signalReasons.push("structured_product_signal");
+      }
+      if (priceMarker) {
+        reasons.push("price_marker_present");
+        signalReasons.push("price_marker_present");
+      }
+      if (hasCommerceAction) {
+        reasons.push("commerce_action_present");
+        signalReasons.push("commerce_action_present");
+      }
+      if (hasInfoTabs) {
+        reasons.push("info_tabs_present");
+        signalReasons.push("info_tabs_present");
+      }
+      if (productHeading && !genericHeading) {
+        reasons.push("product_heading_present");
+        signalReasons.push("product_heading_present");
+      }
 
       let listingPenalty = 0;
       listingPenalty += searchQueryLike ? 0.34 : 0;
@@ -163,13 +187,34 @@
       listingPenalty += genericHeading ? 0.2 : 0;
       listingPenalty += filterRailPresent ? 0.1 : 0;
 
-      if (searchQueryLike) reasons.push("search_query_detected");
-      if (listingControlCount >= 2) reasons.push("listing_controls_detected");
-      if (productLinkCount >= 4) reasons.push("multiple_product_links_detected");
-      if (buyCtaCount >= 3) reasons.push("multiple_buy_ctas_detected");
-      if (structuredProductNodes.length >= 3) reasons.push("multiple_structured_products_detected");
-      if (genericHeading) reasons.push("generic_heading_detected");
-      if (filterRailPresent) reasons.push("filter_rail_detected");
+      if (searchQueryLike) {
+        reasons.push("search_query_detected");
+        penaltyReasons.push("search_query_detected");
+      }
+      if (listingControlCount >= 2) {
+        reasons.push("listing_controls_detected");
+        penaltyReasons.push("listing_controls_detected");
+      }
+      if (productLinkCount >= 4) {
+        reasons.push("multiple_product_links_detected");
+        penaltyReasons.push("multiple_product_links_detected");
+      }
+      if (buyCtaCount >= 3) {
+        reasons.push("multiple_buy_ctas_detected");
+        penaltyReasons.push("multiple_buy_ctas_detected");
+      }
+      if (structuredProductNodes.length >= 3) {
+        reasons.push("multiple_structured_products_detected");
+        penaltyReasons.push("multiple_structured_products_detected");
+      }
+      if (genericHeading) {
+        reasons.push("generic_heading_detected");
+        penaltyReasons.push("generic_heading_detected");
+      }
+      if (filterRailPresent) {
+        reasons.push("filter_rail_detected");
+        penaltyReasons.push("filter_rail_detected");
+      }
 
       const finalScore = this.round(Math.max(0, Math.min(1, score - listingPenalty)));
       let verdict = "UNSURE";
@@ -212,16 +257,18 @@
         ...productSignals,
         listingPenalty: this.round(listingPenalty),
         signalScore: this.round(score)
-      });
+      }, { signalReasons, penaltyReasons });
     }
 
-    result(verdict, score, reasons, metrics = {}) {
+    result(verdict, score, reasons, metrics = {}, detail = {}) {
       const passiveCollect = verdict === "UNSURE";
       const collectionMode = verdict === "TRACKABLE_PDP"
         ? "trackable"
         : passiveCollect
           ? "unsure_passive"
           : "blocked";
+      const signalReasons = Array.from(new Set((detail.signalReasons || []).filter(Boolean)));
+      const penaltyReasons = Array.from(new Set((detail.penaltyReasons || []).filter(Boolean)));
       return {
         verdict,
         trackable: verdict === "TRACKABLE_PDP",
@@ -230,9 +277,23 @@
         collectionMode,
         score: this.round(score),
         reasons: Array.from(new Set((reasons || []).filter(Boolean))),
+        signal_reasons: signalReasons,
+        penalty_reasons: penaltyReasons,
         metrics: {
           ...metrics,
           passiveCollectRecommended: passiveCollect
+        },
+        audit: {
+          host: String(metrics.host || ""),
+          path: String(metrics.path || ""),
+          document_ready_state: String(metrics.documentReadyState || ""),
+          verdict,
+          collection_mode: collectionMode,
+          score: this.round(score),
+          signal_score: this.round(metrics.signalScore || 0),
+          listing_penalty: this.round(metrics.listingPenalty || 0),
+          signal_reasons: signalReasons,
+          penalty_reasons: penaltyReasons
         }
       };
     }

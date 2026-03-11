@@ -70,6 +70,23 @@
       };
     }
 
+    buildPdpGateAudit(decision = {}, lastPdpGate = {}) {
+      const fallbackAudit = (lastPdpGate && typeof lastPdpGate.audit === "object") ? lastPdpGate.audit : {};
+      const sourceAudit = (decision && typeof decision.pdp_gate_audit === "object") ? decision.pdp_gate_audit : fallbackAudit;
+      return {
+        host: String(sourceAudit.host || lastPdpGate.metrics?.host || ""),
+        path: String(sourceAudit.path || lastPdpGate.metrics?.path || ""),
+        document_ready_state: String(sourceAudit.document_ready_state || lastPdpGate.metrics?.documentReadyState || ""),
+        verdict: String(sourceAudit.verdict || decision.pdp_gate_verdict || lastPdpGate.verdict || "UNSURE"),
+        collection_mode: String(sourceAudit.collection_mode || decision.collection_mode || lastPdpGate.collectionMode || "blocked"),
+        score: this.round(sourceAudit.score != null ? sourceAudit.score : (decision.pdp_gate_score || lastPdpGate.score || 0)),
+        signal_score: this.round(sourceAudit.signal_score != null ? sourceAudit.signal_score : (decision.pdp_gate_metrics?.signalScore || lastPdpGate.metrics?.signalScore || 0)),
+        listing_penalty: this.round(sourceAudit.listing_penalty != null ? sourceAudit.listing_penalty : (decision.pdp_gate_metrics?.listingPenalty || lastPdpGate.metrics?.listingPenalty || 0)),
+        signal_reasons: Array.isArray(decision.pdp_gate_signal_reasons) ? decision.pdp_gate_signal_reasons : (Array.isArray(lastPdpGate.signal_reasons) ? lastPdpGate.signal_reasons : []),
+        penalty_reasons: Array.isArray(decision.pdp_gate_penalty_reasons) ? decision.pdp_gate_penalty_reasons : (Array.isArray(lastPdpGate.penalty_reasons) ? lastPdpGate.penalty_reasons : [])
+      };
+    }
+
     buildSessionQuality({ rawSnapshot = {}, featurePack = {}, decision = {}, stateClassification = {} } = {}) {
       const context = featurePack.context || {};
       const history = Array.isArray(decision.mode_history) ? decision.mode_history : [];
@@ -193,6 +210,7 @@
       const attribution = this.buildAttributionContext(rawSnapshot, decision);
       const normalizedPageContext = this.helpers.normalizePageContextValue(decision.page_context || pageContext);
       const pipelineTiming = this.normalizePipelineTiming(decision.pipeline_timing || {});
+      const gateAudit = this.buildPdpGateAudit(decision, lastPdpGate);
 
       return {
         source: decision.source,
@@ -214,6 +232,7 @@
         challenger_reason: decision.challenger_reason || null,
         challenger_source: decision.challenger_source || null,
         challenger_policy_probs: decision.challenger_policy_probs || {},
+        effective_epsilon: Number(decision.effective_epsilon || 0),
         action_probs: decision.policy_probs,
         exploration: Boolean(decision.exploration),
         model_version: decision.model_version,
@@ -244,10 +263,17 @@
         constraint_scores: decision.constraint_scores || lastStateClassification.constraint_scores || {},
         reason_codes: Array.isArray(decision.reason_codes) ? decision.reason_codes : (lastStateClassification.reason_codes || []),
         reason_families: Array.isArray(decision.reason_families) ? decision.reason_families : (lastStateClassification.reason_families || []),
+        pair_disambiguators: Array.isArray(decision.pair_disambiguators) ? decision.pair_disambiguators : [],
+        user_explanation_title: decision.user_explanation_title || "Why the page adapted",
+        user_explanation_summary: decision.user_explanation_summary || null,
+        user_explanation_details: Array.isArray(decision.user_explanation_details) ? decision.user_explanation_details : [],
         pdp_gate_verdict: decision.pdp_gate_verdict || lastPdpGate.verdict || "UNSURE",
         pdp_gate_score: Number(decision.pdp_gate_score || lastPdpGate.score || 0),
         pdp_gate_reasons: Array.isArray(decision.pdp_gate_reasons) ? decision.pdp_gate_reasons : (lastPdpGate.reasons || []),
+        pdp_gate_signal_reasons: gateAudit.signal_reasons,
+        pdp_gate_penalty_reasons: gateAudit.penalty_reasons,
         pdp_gate_metrics: decision.pdp_gate_metrics || lastPdpGate.metrics || {},
+        pdp_gate_audit: gateAudit,
         pdp_gate_passive_collect: Boolean(decision.passive_collect || lastPdpGate.passiveCollect),
         collection_mode: decision.collection_mode || (lastPdpGate.collectionMode || (decision.passive_collect ? "unsure_passive" : "trackable")),
         page_context: normalizedPageContext.summary,
@@ -328,7 +354,7 @@
       };
     }
 
-    buildSessionPayload({ outcomeReason, rawSnapshot, featurePack, pageContext, stateClassification, decision, lastPdpGate, navigatorUserAgent, screenWidth } = {}) {
+    buildSessionPayload({ outcomeReason, rawSnapshot, featurePack, pageContext, stateClassification, reasonAnalysis, decision, lastPdpGate, navigatorUserAgent, screenWidth } = {}) {
       const resolved = this.helpers.getResolvedDecision(decision, rawSnapshot, featurePack, pageContext, stateClassification);
       const normalizedPageContext = this.helpers.normalizePageContextValue(pageContext);
       const policyDebug = this.buildPolicyDebug({
@@ -356,7 +382,10 @@
           intent_scores: decision.intent_scores || stateClassification.intent_scores || {},
           constraint_scores: decision.constraint_scores || stateClassification.constraint_scores || {},
           reason_codes: Array.isArray(decision.reason_codes) ? decision.reason_codes : (stateClassification.reason_codes || []),
-          reason_families: Array.isArray(decision.reason_families) ? decision.reason_families : (stateClassification.reason_families || [])
+          reason_families: Array.isArray(decision.reason_families) ? decision.reason_families : (stateClassification.reason_families || []),
+          user_explanation_title: decision.user_explanation_title || reasonAnalysis?.user_explanation_title || "Why the page adapted",
+          user_explanation_summary: decision.user_explanation_summary || reasonAnalysis?.user_explanation_summary || null,
+          user_explanation_details: Array.isArray(decision.user_explanation_details) ? decision.user_explanation_details : (reasonAnalysis?.user_explanation_details || [])
         },
         lastPdpGate,
         lastStateClassification: stateClassification,

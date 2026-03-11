@@ -120,11 +120,13 @@
       const typeKey = String(decision.intervention_type || "").toLowerCase();
       const variants = (this.config && this.config.interventionTypes) || {};
       const variant = variants[typeKey] || {};
+      const explanationSummary = String(decision.user_explanation_summary || "").trim();
+      const explanationTitle = String(decision.user_explanation_title || "").trim();
 
       return {
         observeBadgeText: variant.observeBadgeText || this.config.observeBadgeText || "EmotionUI: Observing",
-        title: variant.title || this.config.interveneTitle || "Need a quicker path?",
-        body: variant.body || this.config.interveneBody || "We can simplify this page.",
+        title: explanationTitle || variant.title || this.config.interveneTitle || "Need a quicker path?",
+        body: explanationSummary || variant.body || this.config.interveneBody || "We can simplify this page.",
         cta: variant.cta || this.config.interveneCta || "Apply assist",
         dismiss: variant.dismiss || this.config.interveneDismiss || "Dismiss"
       };
@@ -272,13 +274,14 @@
         this.clearAssist();
         return;
       }
+      const explanation = String(decision.user_explanation_summary || "Jump directly to the sections that matter instead of scanning the full page.");
 
       const root = this.ensureAssistRoot();
       root.style.display = "block";
       root.innerHTML = `
         <div style="width:300px;background:rgba(15,23,42,0.96);color:#e2e8f0;border:1px solid #1e293b;border-radius:14px;padding:12px;box-shadow:0 16px 36px rgba(15,23,42,0.22);backdrop-filter: blur(8px);">
           <div style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#93c5fd;margin-bottom:8px;">Research shortcuts</div>
-          <div style="font-size:12px;line-height:1.45;color:#cbd5e1;margin-bottom:10px;">Jump directly to the sections that matter instead of scanning the full page.</div>
+          <div style="font-size:12px;line-height:1.45;color:#cbd5e1;margin-bottom:10px;">${explanation}</div>
           <div class="emo-assist-actions" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
         </div>
       `;
@@ -311,12 +314,13 @@
       const priceNode = this.findPrimaryPriceNode();
       const ctaNode = this.findPrimaryCtaNode();
       const summary = (decision.page_context && typeof decision.page_context === "object") ? decision.page_context : {};
+      const explanation = String(decision.user_explanation_summary || "Key reassurance signals found on this page.");
 
       root.style.display = "block";
       root.innerHTML = `
         <div style="width:300px;background:rgba(15,23,42,0.96);color:#e2e8f0;border:1px solid #1e293b;border-radius:14px;padding:12px;box-shadow:0 16px 36px rgba(15,23,42,0.22);backdrop-filter: blur(8px);">
           <div style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#fbbf24;margin-bottom:8px;">Value check</div>
-          <div style="font-size:12px;line-height:1.45;color:#cbd5e1;margin-bottom:10px;">Key reassurance signals found on this page.</div>
+          <div style="font-size:12px;line-height:1.45;color:#cbd5e1;margin-bottom:10px;">${explanation}</div>
           <div class="emo-assist-bullets" style="display:grid;gap:6px;margin-bottom:10px;"></div>
           <div class="emo-assist-actions" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
         </div>
