@@ -46,6 +46,7 @@
       this.lastPolicyHistoryValue = "SILENT";
       this.activeSection = "";
       this.activeSectionStartTs = 0;
+      this.activeSectionLastSampleTs = 0;
       this.activeHoverKey = "";
       this.activeHoverStartTs = 0;
       this.activeHoverIsPrice = false;
@@ -590,12 +591,12 @@
     }
 
     sampleActiveSectionDwell(now = Date.now()) {
-      if (!this.activeSection || !this.activeSectionStartTs) return;
-      const delta = Math.max(0, now - this.activeSectionStartTs);
+      if (!this.activeSection || !this.activeSectionLastSampleTs) return;
+      const delta = Math.max(0, now - this.activeSectionLastSampleTs);
       if (!delta) return;
 
       this.raw.sectionDwellMs[this.activeSection] += delta;
-      this.activeSectionStartTs = now;
+      this.activeSectionLastSampleTs = now;
 
       if (this.raw.sectionDwellMs.reviews >= this.config.reviewRewardDwellMs) {
         this.raw.outcomes.review_dwell_over_10s = true;
@@ -633,6 +634,7 @@
 
       this.activeSection = nextSection;
       this.activeSectionStartTs = now;
+      this.activeSectionLastSampleTs = now;
       this.lastSectionSwitchTs = now;
       this.raw.sectionVisits[nextSection] += 1;
       this.pushEvent("section_switch", { section: nextSection, reason });

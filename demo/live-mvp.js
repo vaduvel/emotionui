@@ -251,25 +251,35 @@ class AdaptiveLayout {
     const mode = String(decision.resolved_mode || decision.mode || "STANDARD");
     const adaptation = LIVE_ADAPTATIONS[mode] || LIVE_ADAPTATIONS.STANDARD;
     const focus = resolveVisualFocus(decision.raw_snapshot_summary || {}, decision);
+    const contract = getStateUiContract(decision.primary_state || decision.state_label);
+    const focusAllowed = isFocusAllowedByContract(contract, focus);
+    const interventionLevel = String(contract.intervention_level || "SILENT").toUpperCase();
+    const slotVisible = shouldRenderAdaptiveSlot(contract, mode, focusAllowed);
 
     this.applyBodyClass(adaptation.bodyClass);
-    if (mode !== "STANDARD") {
+    if (mode !== "STANDARD" && focusAllowed && interventionLevel !== "SILENT") {
       this.setZoneState(focus.zone, "is-emphasized");
     }
-    if (adaptation.scope === "local") {
+    if (adaptation.scope === "local" && focusAllowed && interventionLevel !== "SILENT") {
       this.applyZoneTheme(focus.zone, mode);
     }
     this.hideSelectors(adaptation.globalQuietSelectors);
     this.muteSelectors(adaptation.globalMutedSelectors);
-    this.renderSlot(focus.zone, buildAdaptivePanel(mode, focus, decision));
+    this.renderSlot(focus.zone, slotVisible ? buildAdaptivePanel(mode, focus, decision) : null);
 
     document.body.dataset.activeZone = focus.zone;
     document.body.dataset.activeCluster = focus.cluster;
     document.body.dataset.activeMode = mode;
+    document.body.dataset.interventionLevel = interventionLevel;
+    document.body.dataset.priorityScenario = contract.priority_scenario_key || "supporting";
+    document.body.dataset.adaptationSuppressed = focusAllowed ? "false" : "true";
     if (this.container) {
       this.container.setAttribute("data-active-zone", focus.zone);
       this.container.setAttribute("data-active-cluster", focus.cluster);
       this.container.setAttribute("data-active-mode", mode);
+      this.container.setAttribute("data-intervention-level", interventionLevel);
+      this.container.setAttribute("data-priority-scenario", contract.priority_scenario_key || "supporting");
+      this.container.setAttribute("data-adaptation-suppressed", focusAllowed ? "false" : "true");
     }
   }
 
@@ -299,9 +309,15 @@ class AdaptiveLayout {
     delete document.body.dataset.activeZone;
     delete document.body.dataset.activeCluster;
     delete document.body.dataset.activeMode;
+    delete document.body.dataset.interventionLevel;
+    delete document.body.dataset.priorityScenario;
+    delete document.body.dataset.adaptationSuppressed;
     this.container?.removeAttribute("data-active-zone");
     this.container?.removeAttribute("data-active-cluster");
     this.container?.removeAttribute("data-active-mode");
+    this.container?.removeAttribute("data-intervention-level");
+    this.container?.removeAttribute("data-priority-scenario");
+    this.container?.removeAttribute("data-adaptation-suppressed");
     this.applyBodyClass("emo-standard");
   }
 }
@@ -351,9 +367,21 @@ const RulesResolver = window.EmotionUIRulesResolver;
 const HysteresisGuard = window.EmotionUIHysteresisGuard;
 const OutcomeLogger = window.EmotionUIOutcomeLogger;
 const StateContract = window.EmotionUIStateContract || {};
+const UiAdaptationContract = window.EmotionUIUiAdaptationContract || {};
 const SUPABASE_URL = "https://tmhymprkpbxvqhxofxvy.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtaHltcHJrcGJ4dnFoeG9meHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NTY3MzQsImV4cCI6MjA4ODEzMjczNH0.yoL-3aCD2iTBRnmFwZQG5LDe0to7WBbGYBCcnYXcjvI";
 const LIVE_MVP_PRODUCT_ID = "LIVE_MVP_APPLE_MAC_MINI";
+const getStateUiContract = typeof UiAdaptationContract.getStateUiContract === "function"
+  ? UiAdaptationContract.getStateUiContract.bind(UiAdaptationContract)
+  : (() => ({
+      user_need: "orientation",
+      intervention_level: "SILENT",
+      priority_scenario_key: null,
+      allowed_clusters: [],
+      allowed_zones: [],
+      allowed_primitives: [],
+      forbidden_patterns: []
+    }));
 
 const SIGNAL_ROWS = [
   { key: "clicks", label: "Clicks" },
@@ -460,6 +488,7 @@ const LIVE_INTENT_THRESHOLDS = Object.freeze({
   researchSectionDwellMs: 2200,
   researchClusterDwellMs: 3500,
   researchInfoZoneDwellSec: 8,
+  activeSectionZoneOverrideMs: 1600,
   exploreOverviewScroll: 0.45,
   exploreOverviewVisits: 3,
   exploreTieBreakScroll: 0.22,
@@ -485,7 +514,8 @@ const LIVE_INTENT_THRESHOLDS = Object.freeze({
   overwhelmedResearchHesitationScore: 0.42,
   overwhelmedResearchFrictionScore: 0.18,
   commerceRecencyDropThreshold: 0.2,
-  researchRecencyRiseThreshold: 0.45
+  researchRecencyRiseThreshold: 0.45,
+  researchResurgenceCtaIntentMax: 2
 });
 
 const LIVE_MVP_MODE_COOLDOWN = Object.freeze({
@@ -522,6 +552,31 @@ function getZoneMeta(zone) {
   return ZONE_META[normalizeZone(zone)] || ZONE_META.description;
 }
 
+function isFocusAllowedByContract(contract = {}, focus = {}) {
+  const zone = normalizeZone(focus.zone || "");
+  const detailZone = normalizeZone(focus.detailZone || "");
+  const cluster = String(focus.cluster || "").trim().toLowerCase();
+  const allowedZones = Array.isArray(contract.allowed_zones)
+    ? contract.allowed_zones.map((value) => normalizeZone(value)).filter(Boolean)
+    : [];
+  const allowedClusters = Array.isArray(contract.allowed_clusters)
+    ? contract.allowed_clusters.map((value) => String(value || "").trim().toLowerCase()).filter(Boolean)
+    : [];
+
+  if (!allowedZones.length && !allowedClusters.length) return true;
+  if (detailZone && allowedZones.includes(detailZone)) return true;
+  if (zone && allowedZones.includes(zone)) return true;
+  if (cluster && allowedClusters.includes(cluster)) return true;
+  return false;
+}
+
+function shouldRenderAdaptiveSlot(contract = {}, mode = "STANDARD", focusAllowed = true) {
+  if (!focusAllowed) return false;
+  if (/^(DESIGN_OXYGEN|SPOTLIGHT_MODE)$/.test(String(mode || "").toUpperCase())) return true;
+  const level = String(contract.intervention_level || "SILENT").toUpperCase();
+  return level === "ASSIST" || level === "ACCELERATE";
+}
+
 function zoneFromSection(section) {
   const key = String(section || "").trim().toLowerCase();
   return ["description", "specs", "reviews", "faq"].includes(key) ? key : "";
@@ -534,6 +589,20 @@ function collapseZoneForPresentation(zone, mode = "STANDARD") {
     return "research";
   }
   return normalized;
+}
+
+function shouldPreferSectionZone({
+  explicitZone = "",
+  activeSectionZone = "",
+  activeSectionAgeMs = 0,
+  mode = "STANDARD"
+} = {}) {
+  const explicit = collapseZoneForPresentation(explicitZone, mode);
+  const section = collapseZoneForPresentation(activeSectionZone, mode);
+  if (!section) return false;
+  if (!explicit) return true;
+  if (getZoneMeta(explicit).cluster === getZoneMeta(section).cluster) return false;
+  return Number(activeSectionAgeMs || 0) >= LIVE_INTENT_THRESHOLDS.activeSectionZoneOverrideMs;
 }
 
 function setVisualFocus(zone, source = "interaction") {
@@ -566,13 +635,24 @@ function resolveVisualFocus(raw = {}, decision = {}) {
   const mode = String(decision.resolved_mode || decision.mode || "STANDARD");
   const explicitFocus = collapseZoneForPresentation(visualFocus.zone, mode);
   const activeSectionZone = zoneFromSection(decision?.context_metrics?.activeSection || raw.activeSection);
+  const activeSectionAgeMs =
+    Number(raw.activeSectionAgeMs || 0) ||
+    Math.round(Number(decision?.context_metrics?.activeSectionAgeSec || 0) * 1000);
   const fallbackZone =
     mode === "RESEARCH_MODE"
       ? "research"
       : /^(PRICE_ALERT_MODE|NEGOTIATOR_MODE|EXPRESS_LANE)$/.test(mode)
         ? "purchase"
         : "overview";
-  const zone = explicitFocus || collapseZoneForPresentation(activeSectionZone, mode) || fallbackZone;
+  const sectionPreferred = shouldPreferSectionZone({
+    explicitZone: explicitFocus,
+    activeSectionZone,
+    activeSectionAgeMs,
+    mode
+  });
+  const zone = sectionPreferred
+    ? collapseZoneForPresentation(activeSectionZone, mode)
+    : explicitFocus || collapseZoneForPresentation(activeSectionZone, mode) || fallbackZone;
   const meta = getZoneMeta(zone);
   const detailZone = activeSectionZone || (["description", "specs", "reviews", "faq"].includes(explicitFocus) ? explicitFocus : "");
 
@@ -582,7 +662,7 @@ function resolveVisualFocus(raw = {}, decision = {}) {
     cluster: meta.cluster,
     detailZone,
     detailLabel: detailZone ? getZoneMeta(detailZone).label : meta.label,
-    source: visualFocus.source || "derived"
+    source: sectionPreferred ? "active_section" : (visualFocus.source || "derived")
   };
 }
 
@@ -850,7 +930,9 @@ function makeUrPayload(decision) {
   const mode = String(decision.resolved_mode || decision.mode || "STANDARD");
   const interventionType = String(decision.intervention_type || "none");
   const focus = resolveVisualFocus(decision.raw_snapshot_summary || {}, decision);
-  const label = `${decision.primary_state || decision.state_label || "CALM_BROWSING"} → ${mode}`;
+  const interventionLevel = String(decision.intervention_level || "SILENT");
+  const scenarioKey = String(decision.priority_scenario_key || "supporting");
+  const label = `${decision.primary_state || decision.state_label || "CALM_BROWSING"} · ${interventionLevel} → ${mode}`;
   const reasonCodes = Array.isArray(decision.reason_codes) && decision.reason_codes.length
     ? decision.reason_codes.slice(0, 3).join(", ")
     : "No strong driver";
@@ -858,7 +940,7 @@ function makeUrPayload(decision) {
   return {
     state: mode,
     label,
-    description: `${interventionType === "none" ? "Passive adaptation" : interventionType} · ${focus.label} · ${reasonCodes}`
+    description: `${interventionType === "none" ? "Passive adaptation" : interventionType} · ${scenarioKey} · ${focus.label} · ${reasonCodes}`
   };
 }
 
@@ -894,12 +976,21 @@ function getStatePolicy(stateLabel, zoneCluster = "overview") {
 
 function getMvpZone(raw = {}, decision = {}) {
   const activeSection = String(raw.activeSection || decision?.context_metrics?.activeSection || "");
+  const activeSectionAgeMs =
+    Number(raw.activeSectionAgeMs || 0) ||
+    Math.round(Number(decision?.context_metrics?.activeSectionAgeSec || 0) * 1000);
   const explicitZone = normalizeZone(visualFocus.zone || "");
   const collapsedExplicitZone = ["description", "specs", "reviews", "faq"].includes(explicitZone)
     ? "research"
     : explicitZone;
   const sectionZone = collapseZoneForPresentation(zoneFromSection(activeSection), "RESEARCH_MODE");
-  const zone = normalizeZone(collapsedExplicitZone || sectionZone || "overview") || "overview";
+  const sectionPreferred = shouldPreferSectionZone({
+    explicitZone: collapsedExplicitZone,
+    activeSectionZone: zoneFromSection(activeSection),
+    activeSectionAgeMs,
+    mode: "RESEARCH_MODE"
+  });
+  const zone = normalizeZone((sectionPreferred ? sectionZone : collapsedExplicitZone) || sectionZone || "overview") || "overview";
   const meta = getZoneMeta(zone);
   return {
     zone,
@@ -1002,6 +1093,13 @@ function buildThresholdSnapshot(raw = {}, decision = {}) {
       researchDwellMs >= LIVE_INTENT_THRESHOLDS.researchClusterDwellMs ||
       infoZoneDwellSec >= LIVE_INTENT_THRESHOLDS.researchInfoZoneDwellSec
     );
+  const researchResurgence =
+    researchReadyRaw &&
+    zoneInfo.cluster === "research" &&
+    recentResearchSignal >= LIVE_INTENT_THRESHOLDS.researchRecencyRiseThreshold &&
+    activeSectionAgeMs >= LIVE_INTENT_THRESHOLDS.activeSectionZoneOverrideMs &&
+    recentCheckoutCount === 0 &&
+    purchaseCtaIntentCount <= LIVE_INTENT_THRESHOLDS.researchResurgenceCtaIntentMax;
   const frustrationReadyRaw =
     recentRageCount >= LIVE_INTENT_THRESHOLDS.rageClicksForFrustration ||
     recentDeadClickCount >= LIVE_INTENT_THRESHOLDS.deadClicksForFrustration ||
@@ -1081,6 +1179,7 @@ function buildThresholdSnapshot(raw = {}, decision = {}) {
     exploring_ready: exploringReadyRaw,
     observe_ready: observeReadyRaw,
     research_ready: researchReadyRaw,
+    research_resurgence: researchResurgence,
     price_ready: priceReadyRaw,
     decision_ready: decisionReadyRaw,
     frustration_ready: frustrationReadyRaw,
@@ -1140,11 +1239,15 @@ function chooseThresholdState(decision = {}, thresholdSnapshot = {}) {
   const inCooldown = lastTransitionTs > 0 && (now - lastTransitionTs) < getCooldownForMode(currentMode);
   const cluster = String(thresholdSnapshot.zone_cluster || "");
   const recentSignals = thresholdSnapshot.recent_signal_snapshot || {};
+  const researchResurgence = Boolean(thresholdSnapshot.research_resurgence);
 
   let targetState = currentState;
   let transitionReason = "hold_current_state";
 
-  if (currentState === "DEEP_RESEARCH" && thresholdSnapshot.decision_ready) {
+  if (currentState === "DEEP_RESEARCH" && researchResurgence) {
+    targetState = "DEEP_RESEARCH";
+    transitionReason = "hold_research_resurgence";
+  } else if (currentState === "DEEP_RESEARCH" && thresholdSnapshot.decision_ready && !researchResurgence) {
     targetState = "DECISION_READY";
     transitionReason = "exit_research_to_decision";
   } else if (currentState === "DEEP_RESEARCH" && thresholdSnapshot.price_ready && !thresholdSnapshot.research_ready) {
@@ -1176,6 +1279,11 @@ function chooseThresholdState(decision = {}, thresholdSnapshot = {}) {
       targetState = "CALM_BROWSING";
       transitionReason = "exit_friction_to_observe";
     }
+  } else if (researchResurgence) {
+    targetState = "DEEP_RESEARCH";
+    transitionReason = currentState === "DECISION_READY"
+      ? "exit_decision_to_research_resurgence"
+      : "enter_research_resurgence";
   } else if (thresholdSnapshot.decision_ready) {
     targetState = "DECISION_READY";
     transitionReason = "enter_decision_threshold";
@@ -1243,6 +1351,7 @@ function chooseThresholdState(decision = {}, thresholdSnapshot = {}) {
 function buildPresentedDecision(baseDecision = {}, raw = {}, thresholdSnapshot = {}, stateResolution = {}) {
   const stateLabel = String(stateResolution.state || "CALM_BROWSING").toUpperCase();
   const definition = StateContract.getStateDefinition(stateLabel) || {};
+  const uiContract = getStateUiContract(stateLabel) || {};
   const mode = String(definition.default_mode || "STANDARD");
   const policy = getStatePolicy(stateLabel, thresholdSnapshot.zone_cluster);
   const previousState = String(lastDecision?.primary_state || "");
@@ -1304,6 +1413,14 @@ function buildPresentedDecision(baseDecision = {}, raw = {}, thresholdSnapshot =
     state_contract_key: stateLabel,
     state_contract_mode: mode,
     state_contract_intervention: definition.default_intervention_type || "none",
+    intervention_level: uiContract.intervention_level || "SILENT",
+    user_need: uiContract.user_need || "orientation",
+    priority_scenario_key: uiContract.priority_scenario_key || null,
+    ui_operational_stage: uiContract.operational_stage || "supporting",
+    ui_allowed_clusters: Array.isArray(uiContract.allowed_clusters) ? uiContract.allowed_clusters.slice() : [],
+    ui_allowed_zones: Array.isArray(uiContract.allowed_zones) ? uiContract.allowed_zones.slice() : [],
+    ui_allowed_primitives: Array.isArray(uiContract.allowed_primitives) ? uiContract.allowed_primitives.slice() : [],
+    ui_forbidden_patterns: Array.isArray(uiContract.forbidden_patterns) ? uiContract.forbidden_patterns.slice() : [],
     transition_ts: transitionTs,
     presented_at_ts: now
   };
@@ -1332,6 +1449,9 @@ function buildTimelineEntry({ trigger, raw, pageContext, featurePack, stateClass
     ts: Date.now(),
     trigger,
     primary_state: decision.primary_state || stateClassification.primary_state || stateClassification.label,
+    intervention_level: decision.intervention_level || "SILENT",
+    priority_scenario_key: decision.priority_scenario_key || null,
+    user_need: decision.user_need || null,
     affect_tag: decision.affect_tag || stateClassification.affect_tag || stateClassification.emotion_tag || "CALM",
     intent_tag: decision.intent_tag || stateClassification.intent_tag || "EXPLORING",
     constraint_tags: decision.constraint_tags || stateClassification.constraint_tags || [],
@@ -1610,7 +1730,7 @@ function defaultFormat(value) {
 function updateInspector(decision) {
   const focus = resolveVisualFocus(decision.raw_snapshot_summary || {}, decision);
   document.getElementById("inspector-state").textContent = decision.primary_state || "CALM_BROWSING";
-  document.getElementById("inspector-desc").textContent = `${decision.policy || "SILENT"} · ${decision.resolved_mode || "STANDARD"} · ${focus.label}`;
+  document.getElementById("inspector-desc").textContent = `${decision.policy || "SILENT"} · ${decision.resolved_mode || "STANDARD"} · ${decision.intervention_level || "SILENT"} · ${focus.label}`;
   document.getElementById("inspector-confidence-val").textContent = `${Math.round(Number(decision.confidence || 0) * 100)}%`;
   document.getElementById("inspector-confidence-bar").style.width = `${Math.round(Number(decision.confidence || 0) * 100)}%`;
 
@@ -1664,6 +1784,15 @@ function updateInspector(decision) {
     `
       <div class="rule-item">
         <div class="rule-header">
+          <span class="rule-id">UI Contract</span>
+          <span class="rule-status rule-active">${decision.intervention_level || "SILENT"}</span>
+        </div>
+        <div class="rule-state">${decision.priority_scenario_key || "supporting"} · ${decision.user_need || "orientation"}</div>
+      </div>
+    `,
+    `
+      <div class="rule-item">
+        <div class="rule-header">
           <span class="rule-id">Reason codes</span>
           <span class="rule-status rule-inactive">${reasonCodes.length || 0}</span>
         </div>
@@ -1689,6 +1818,7 @@ function updateInspector(decision) {
     const booleans = [
       ["observe_ready", debug.observe_ready],
       ["research_ready", debug.research_ready],
+      ["research_resurgence", debug.research_resurgence],
       ["price_ready", debug.price_ready],
       ["decision_ready", debug.decision_ready],
       ["frustration_ready", debug.frustration_ready],
